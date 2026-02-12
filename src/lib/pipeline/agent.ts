@@ -32,6 +32,13 @@ export class PoetryAnalysisAgent {
       poemId: poemId || undefined,
     });
     this.totalCost += acquired.cost;
+
+    // Link poem to the AnalysisJob
+    await db.analysisJob.update({
+      where: { id: this.config.analysisJobId },
+      data: { poemId: acquired.poemId },
+    });
+
     await this.log("acquire", "acquire_poem", { mode: params.acquisitionMode }, {
       poemId: acquired.poemId,
       title: acquired.title,

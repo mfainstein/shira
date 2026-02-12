@@ -142,7 +142,7 @@ model PoemFeature {
 
 model AnalysisJob {
   id              String    @id @default(cuid())
-  poemId          String
+  poemId          String?
   status          JobStatus @default(QUEUED)
   currentPhase    String?
   progress        Int       @default(0)
@@ -157,7 +157,7 @@ model AnalysisJob {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  poem Poem     @relation(fields: [poemId], references: [id], onDelete: Cascade)
+  poem Poem?    @relation(fields: [poemId], references: [id], onDelete: Cascade)
   logs JobLog[]
 }
 

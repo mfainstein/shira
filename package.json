@@ -16,7 +16,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "cron:auto-generate": "tsx workers/auto-generate.cron.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.72.1",
