@@ -68,12 +68,7 @@ export default async function PoemPage({ params }: PageProps) {
       {/* 1. Artwork */}
       {art && (
         <section className="max-w-4xl mx-auto px-4 pt-8 pb-4">
-          <PoemArt
-            slug={slug}
-            drawCommands={art.drawCommands as Record<string, unknown> | null}
-            style={art.style}
-            title={poem.title}
-          />
+          <PoemArt slug={slug} title={poem.title} />
         </section>
       )}
 

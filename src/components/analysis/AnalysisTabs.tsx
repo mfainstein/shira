@@ -48,7 +48,7 @@ export function AnalysisTabs({ analyses, language }: AnalysisTabsProps) {
 
   return (
     <div>
-      <h2 className="text-2xl poem-title mb-2">Three Perspectives</h2>
+      <h2 className="text-2xl poem-title mb-2">Perspectives</h2>
       <p className="text-charcoal-light mb-6 text-sm">
         Tap on a model to reveal its analysis
       </p>
