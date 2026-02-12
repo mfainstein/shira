@@ -116,8 +116,8 @@ export class PoetryAnalysisAgent {
     }
     await this.updateProgress(90, "COMPARING", "Comparison complete");
 
-    // Phase 5: Create PoemFeature as DRAFT (90-100%)
-    await this.updateProgress(95, "REVIEW", "Creating feature draft");
+    // Phase 5: Publish poem (90-100%)
+    await this.updateProgress(95, "REVIEW", "Publishing poem");
 
     const baseSlug = slugify(poem.title, {
       lower: true,
@@ -130,7 +130,8 @@ export class PoetryAnalysisAgent {
       data: {
         poemId: acquired.poemId,
         slug,
-        status: "DRAFT",
+        status: "PUBLISHED",
+        publishedAt: new Date(),
       },
     });
 
