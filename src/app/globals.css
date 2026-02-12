@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ivory: #faf8f5;
+  --color-ivory-dark: #f0ece5;
+  --color-charcoal: #2c2c2c;
+  --color-charcoal-light: #4a4a4a;
+  --color-sepia: #8b5e3c;
+  --color-sepia-light: #a67c5b;
+  --color-claude: #d97706;
+  --color-gpt: #059669;
+  --color-gemini: #7c3aed;
+  --color-border: #e5ddd3;
+  --color-border-light: #ede7de;
+
+  --font-heading: "Playfair Display", Georgia, serif;
+  --font-body: "Lora", Georgia, serif;
+  --font-ui: "Inter", system-ui, sans-serif;
+  --font-hebrew: "Frank Ruhl Libre", "David Libre", serif;
+}
+
+body {
+  font-family: var(--font-ui);
+  background-color: var(--color-ivory);
+  color: var(--color-charcoal);
+}
+
+/* Poetry typography */
+.poem-text {
+  font-family: var(--font-body);
+  line-height: 2;
+  letter-spacing: 0.02em;
+}
+
+.poem-text-he {
+  font-family: var(--font-hebrew);
+  direction: rtl;
+  text-align: right;
+  line-height: 2.2;
+  letter-spacing: 0;
+}
+
+.poem-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.poem-title-he {
+  font-family: var(--font-hebrew);
+  direction: rtl;
+}
+
+/* Stanza breaks */
+.stanza + .stanza {
+  margin-top: 1.5em;
+}
+
+/* Card styles */
+.card {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Ornamental divider */
+.divider-ornament {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 2rem 0;
+  color: var(--color-sepia);
+  opacity: 0.5;
+}
+
+.divider-ornament::before,
+.divider-ornament::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+}
+
+/* Model accent colors */
+.model-claude {
+  --model-color: var(--color-claude);
+}
+.model-gpt {
+  --model-color: var(--color-gpt);
+}
+.model-gemini {
+  --model-color: var(--color-gemini);
+}
+
+/* Tab styles */
+.tab-active {
+  border-bottom-color: var(--model-color);
+  color: var(--model-color);
+}
+
+/* Analysis panel */
+.analysis-section summary {
+  cursor: pointer;
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.analysis-section summary:hover {
+  color: var(--color-sepia);
+}
+
+/* RTL support */
+[dir="rtl"] .analysis-section {
+  text-align: right;
+}
+
+/* Markdown content */
+.prose-poem {
+  font-family: var(--font-body);
+  line-height: 1.8;
+}
+
+.prose-poem h1,
+.prose-poem h2,
+.prose-poem h3 {
+  font-family: var(--font-heading);
+}
+
+/* Badge styles */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-family: var(--font-ui);
+}
+
+.badge-claude {
+  background: #fef3c7;
+  color: #92400e;
+}
+.badge-gpt {
+  background: #d1fae5;
+  color: #065f46;
+}
+.badge-gemini {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+.badge-en {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.badge-he {
+  background: #fce7f3;
+  color: #9d174d;
+}

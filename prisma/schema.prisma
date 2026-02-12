@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Language {
+  EN
+  HE
+}
+
+enum PoemSource {
+  FOUND
+  AI_GENERATED
+}
+
+enum AIModel {
+  CLAUDE
+  GPT
+  GEMINI
+}
+
+enum ArtStyle {
+  MINIMALIST
+  DALLE
+}
+
+enum AnalysisStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum FeatureStatus {
+  DRAFT
+  PUBLISHED
+  REJECTED
+}
+
+enum JobStatus {
+  QUEUED
+  ACQUIRING
+  GENERATING_ART
+  ANALYZING
+  COMPARING
+  REVIEW
+  COMPLETED
+  FAILED
+}
+
+model Poem {
+  id            String    @id @default(cuid())
+  title         String
+  titleHe       String?
+  author        String
+  authorHe      String?
+  content       String    @db.Text
+  contentHe     String?   @db.Text
+  language      Language  @default(EN)
+  source        PoemSource
+  sourceModel   AIModel?
+  sourceUrl     String?
+  themes        Json      @default("[]")
+  year          Int?
+  isPublicDomain Boolean  @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  analyses   PoemAnalysis[]
+  art        PoemArt[]
+  comparison PoemComparison?
+  feature    PoemFeature?
+  jobs       AnalysisJob[]
+}
+
+model PoemAnalysis {
+  id                String         @id @default(cuid())
+  poemId            String
+  model             AIModel
+  literaryAnalysis  String         @db.Text
+  thematicAnalysis  String         @db.Text
+  emotionalAnalysis String         @db.Text
+  culturalAnalysis  String         @db.Text
+  hebrewAnalysis    String?        @db.Text
+  rawResponse       Json
+  tokensUsed        Int
+  cost              Float
+  durationMs        Int
+  status            AnalysisStatus @default(PENDING)
+  createdAt         DateTime       @default(now())
+
+  poem Poem @relation(fields: [poemId], references: [id], onDelete: Cascade)
+
+  @@unique([poemId, model])
+}
+
+model PoemArt {
+  id           String         @id @default(cuid())
+  poemId       String
+  style        ArtStyle
+  imageUrl     String?
+  imageData    Bytes?
+  drawCommands Json?
+  prompt       String         @db.Text
+  status       AnalysisStatus @default(PENDING)
+  createdAt    DateTime       @default(now())
+
+  poem Poem @relation(fields: [poemId], references: [id], onDelete: Cascade)
+}
+
+model PoemComparison {
+  id                 String   @id @default(cuid())
+  poemId             String   @unique
+  comparisonContent  String   @db.Text
+  agreements         Json
+  disagreements      Json
+  insights           Json
+  model              AIModel
+  tokensUsed         Int
+  cost               Float
+  createdAt          DateTime @default(now())
+
+  poem Poem @relation(fields: [poemId], references: [id], onDelete: Cascade)
+}
+
+model PoemFeature {
+  id              String        @id @default(cuid())
+  poemId          String        @unique
+  slug            String        @unique
+  status          FeatureStatus @default(DRAFT)
+  publishedAt     DateTime?
+  rejectionReason String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  poem Poem @relation(fields: [poemId], references: [id], onDelete: Cascade)
+}
+
+model AnalysisJob {
+  id              String    @id @default(cuid())
+  poemId          String
+  status          JobStatus @default(QUEUED)
+  currentPhase    String?
+  progress        Int       @default(0)
+  acquisitionMode String
+  topic           String?
+  artStyle        String    @default("MINIMALIST")
+  totalCost       Float     @default(0)
+  jobId           String?
+  errorMessage    String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  poem Poem     @relation(fields: [poemId], references: [id], onDelete: Cascade)
+  logs JobLog[]
+}
+
+model JobLog {
+  id         String   @id @default(cuid())
+  jobId      String
+  phase      String
+  action     String
+  input      Json?
+  output     Json?
+  tool       String?
+  tokensUsed Int?
+  cost       Float?
+  durationMs Int?
+  createdAt  DateTime @default(now())
+
+  job AnalysisJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+}
