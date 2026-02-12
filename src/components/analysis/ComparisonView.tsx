@@ -22,29 +22,17 @@ export function ComparisonView({
   agreements,
   disagreements,
   insights,
-  language,
 }: ComparisonViewProps) {
-  const [view, setView] = useState<"prose" | "structured">("prose");
-  const isHebrew = language === "HE";
+  const [view, setView] = useState<"structured" | "essay">("structured");
 
   return (
-    <div dir={isHebrew ? "rtl" : "ltr"}>
-      <h2 className={`text-2xl poem-title mb-6 ${isHebrew ? "text-right" : ""}`}>
-        {isHebrew ? "איפה הם מסכימים ואיפה חולקים" : "Where They Agree and Diverge"}
+    <div>
+      <h2 className="text-2xl poem-title mb-6">
+        Where They Agree and Diverge
       </h2>
 
       {/* View toggle */}
       <div className="flex gap-2 mb-6">
-        <button
-          onClick={() => setView("prose")}
-          className={`px-4 py-2 rounded text-sm ${
-            view === "prose"
-              ? "bg-sepia text-white"
-              : "bg-white border border-border"
-          }`}
-        >
-          {isHebrew ? "תצוגת מאמר" : "Essay View"}
-        </button>
         <button
           onClick={() => setView("structured")}
           className={`px-4 py-2 rounded text-sm ${
@@ -53,21 +41,27 @@ export function ComparisonView({
               : "bg-white border border-border"
           }`}
         >
-          {isHebrew ? "תצוגה מובנית" : "Structured View"}
+          Structured View
+        </button>
+        <button
+          onClick={() => setView("essay")}
+          className={`px-4 py-2 rounded text-sm ${
+            view === "essay"
+              ? "bg-sepia text-white"
+              : "bg-white border border-border"
+          }`}
+        >
+          Essay View
         </button>
       </div>
 
-      {view === "prose" ? (
-        <div className="prose-poem text-charcoal-light">
-          <ReactMarkdown>{comparisonContent}</ReactMarkdown>
-        </div>
-      ) : (
+      {view === "structured" ? (
         <div className="space-y-8">
           {/* Agreements */}
           {agreements.length > 0 && (
             <div>
               <h3 className="text-lg font-[family-name:var(--font-heading)] mb-3 text-emerald-700">
-                {isHebrew ? "הסכמות" : "Points of Agreement"}
+                Points of Agreement
               </h3>
               <ul className="space-y-2">
                 {agreements.map((point, i) => (
@@ -75,7 +69,7 @@ export function ComparisonView({
                     key={i}
                     className="flex gap-3 text-sm text-charcoal-light"
                   >
-                    <span className="text-emerald-500 mt-0.5">&#10003;</span>
+                    <span className="text-emerald-500 mt-0.5 shrink-0">&#10003;</span>
                     <span>{point}</span>
                   </li>
                 ))}
@@ -87,7 +81,7 @@ export function ComparisonView({
           {disagreements.length > 0 && (
             <div>
               <h3 className="text-lg font-[family-name:var(--font-heading)] mb-3 text-amber-700">
-                {isHebrew ? "מחלוקות" : "Points of Divergence"}
+                Points of Divergence
               </h3>
               <ul className="space-y-2">
                 {disagreements.map((point, i) => (
@@ -95,7 +89,7 @@ export function ComparisonView({
                     key={i}
                     className="flex gap-3 text-sm text-charcoal-light"
                   >
-                    <span className="text-amber-500 mt-0.5">&#9674;</span>
+                    <span className="text-amber-500 mt-0.5 shrink-0">&#9674;</span>
                     <span>{point}</span>
                   </li>
                 ))}
@@ -107,7 +101,7 @@ export function ComparisonView({
           {insights.length > 0 && (
             <div>
               <h3 className="text-lg font-[family-name:var(--font-heading)] mb-3 text-violet-700">
-                {isHebrew ? "תובנות ייחודיות" : "Unique Insights"}
+                Unique Insights
               </h3>
               <div className="space-y-4">
                 {insights.map((item, i) => (
@@ -121,6 +115,10 @@ export function ComparisonView({
               </div>
             </div>
           )}
+        </div>
+      ) : (
+        <div className="prose prose-sm max-w-none prose-headings:font-[family-name:var(--font-heading)] prose-p:text-charcoal-light prose-li:text-charcoal-light">
+          <ReactMarkdown>{comparisonContent}</ReactMarkdown>
         </div>
       )}
     </div>

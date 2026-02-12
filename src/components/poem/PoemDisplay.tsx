@@ -1,5 +1,7 @@
 "use client";
 
+import { VocabularyText } from "./VocabularyText";
+
 interface PoemDisplayProps {
   title: string;
   titleHe?: string | null;
@@ -8,6 +10,7 @@ interface PoemDisplayProps {
   content: string;
   contentHe?: string | null;
   language: string;
+  vocabulary?: Record<string, string> | null;
 }
 
 function formatStanzas(text: string): string[][] {
@@ -41,12 +44,13 @@ export function PoemDisplay({
   content,
   contentHe,
   language,
+  vocabulary,
 }: PoemDisplayProps) {
   const isHebrew = language === "HE";
   const displayTitle = isHebrew && titleHe ? titleHe : title;
   const displayAuthor = isHebrew && authorHe ? authorHe : author;
   const displayContent = isHebrew && contentHe ? contentHe : content;
-  const stanzas = formatStanzas(displayContent);
+  const hasVocabulary = vocabulary && Object.keys(vocabulary).length > 0;
 
   return (
     <div
@@ -65,17 +69,30 @@ export function PoemDisplay({
         {displayAuthor}
       </p>
 
-      <div className="space-y-0">
-        {stanzas.map((stanza, i) => (
-          <div key={i} className="stanza">
-            {stanza.map((line, j) => (
-              <p key={j} className="leading-relaxed">
-                {line}
-              </p>
-            ))}
-          </div>
-        ))}
-      </div>
+      {hasVocabulary ? (
+        <div className="space-y-0">
+          <VocabularyText
+            text={displayContent}
+            vocabulary={vocabulary}
+            isHebrew={isHebrew}
+          />
+          <p className="text-xs text-charcoal-light/40 mt-6 font-[family-name:var(--font-ui)]" dir="ltr">
+            Tap dotted words for definitions
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-0">
+          {formatStanzas(displayContent).map((stanza, i) => (
+            <div key={i} className="stanza">
+              {stanza.map((line, j) => (
+                <p key={j} className="leading-relaxed">
+                  {line}
+                </p>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Show English version for Hebrew poems */}
       {isHebrew && content && content !== contentHe && (

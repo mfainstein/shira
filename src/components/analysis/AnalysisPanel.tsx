@@ -12,12 +12,12 @@ interface AnalysisPanelProps {
   language: string;
 }
 
-const sectionLabels: Record<string, { en: string; he: string }> = {
-  literary: { en: "Literary Devices & Structure", he: "אמצעים ספרותיים ומבנה" },
-  thematic: { en: "Themes & Ideas", he: "נושאים ורעיונות" },
-  emotional: { en: "Emotional Arc & Tone", he: "מסע רגשי וטון" },
-  cultural: { en: "Cultural & Historical Context", he: "הקשר תרבותי והיסטורי" },
-  hebrew: { en: "Hebrew Poetic Devices", he: "אמצעים שיריים עבריים" },
+const sectionLabels: Record<string, string> = {
+  literary: "Literary Devices & Structure",
+  thematic: "Themes & Ideas",
+  emotional: "Emotional Arc & Tone",
+  cultural: "Cultural & Historical Context",
+  hebrew: "Hebrew Poetic Devices",
 };
 
 export function AnalysisPanel({
@@ -30,8 +30,6 @@ export function AnalysisPanel({
   language,
 }: AnalysisPanelProps) {
   const isHebrew = language === "HE";
-  const getLabel = (key: string) =>
-    isHebrew ? sectionLabels[key].he : sectionLabels[key].en;
 
   const sections = [
     { key: "literary", content: literaryAnalysis },
@@ -50,14 +48,16 @@ export function AnalysisPanel({
   };
 
   return (
-    <div
-      className={`border-l-4 ${modelColor[model] || "border-l-sepia"} pl-6`}
-      dir={isHebrew ? "rtl" : "ltr"}
-    >
+    <div className={`border-l-4 ${modelColor[model] || "border-l-sepia"} pl-4 md:pl-6`}>
       {sections.map(({ key, content }) => (
         <details key={key} className="analysis-section mb-2" open={key === "literary"}>
-          <summary>{getLabel(key)}</summary>
-          <div className="prose-poem py-4 text-charcoal-light text-[0.95rem]">
+          <summary className="font-[family-name:var(--font-ui)]">
+            {sectionLabels[key]}
+          </summary>
+          <div
+            className="prose prose-sm max-w-none py-4 text-charcoal-light prose-headings:font-[family-name:var(--font-heading)] prose-p:leading-relaxed"
+            dir={isHebrew ? "rtl" : "ltr"}
+          >
             <ReactMarkdown>{content}</ReactMarkdown>
           </div>
         </details>

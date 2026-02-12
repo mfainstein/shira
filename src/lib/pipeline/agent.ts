@@ -1,7 +1,7 @@
 import { Job } from "bullmq";
 import { PrismaClient } from "@prisma/client";
 import slugify from "slugify";
-import { acquirePoem, generatePoemArt, analyzePoem, compareAnalyses } from "./phases";
+import { acquirePoem, generatePoemArt, analyzePoem, compareAnalyses, generateVocabulary } from "./phases";
 import { AnalysisJobData, AnalysisJobResult } from "./queue";
 
 export interface AgentConfig {
@@ -90,7 +90,23 @@ export class PoetryAnalysisAgent {
       completed: analysisResult.completed,
       failed: analysisResult.failed,
     });
-    await this.updateProgress(70, "ANALYZING", "Analysis complete");
+    await this.updateProgress(65, "ANALYZING", "Analysis complete");
+
+    // Phase 3b: Generate vocabulary
+    try {
+      const vocabResult = await generateVocabulary(db, {
+        poemId: acquired.poemId,
+        content: analysisContent,
+        language: poem.language as "EN" | "HE",
+      });
+      this.totalCost += vocabResult.cost;
+      await this.log("vocabulary", "generate_vocabulary", {}, {
+        entries: vocabResult.entries,
+      });
+    } catch (error) {
+      console.error("Vocabulary generation failed:", error);
+    }
+    await this.updateProgress(70, "ANALYZING", "Vocabulary complete");
 
     // Phase 4: Compare analyses (70-90%)
     let comparisonGenerated = false;

@@ -87,6 +87,7 @@ export default async function PoemPage({ params }: PageProps) {
           content={poem.content}
           contentHe={poem.contentHe}
           language={poem.language}
+          vocabulary={poem.vocabulary as Record<string, string> | null}
         />
       </section>
 
@@ -125,7 +126,7 @@ export default async function PoemPage({ params }: PageProps) {
 
       {/* Footer */}
       <footer className="border-t border-border py-8 text-center text-sm text-charcoal-light/50">
-        <p>Shira &mdash; Three Minds, One Poem</p>
+        <p>shir.ai &mdash; Three Minds, One Poem</p>
       </footer>
     </main>
   );

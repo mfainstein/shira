@@ -69,7 +69,7 @@ export default function AdminLoginPage() {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-4xl poem-title mb-2">Shira</h1>
+          <h1 className="text-4xl poem-title mb-2">shir.ai</h1>
           <p className="text-charcoal-light text-sm">Admin Access</p>
         </div>
 

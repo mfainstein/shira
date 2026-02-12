@@ -65,6 +65,7 @@ model Poem {
   sourceModel   AIModel?
   sourceUrl     String?
   themes        Json      @default("[]")
+  vocabulary    Json?
   year          Int?
   isPublicDomain Boolean  @default(true)
   createdAt     DateTime  @default(now())

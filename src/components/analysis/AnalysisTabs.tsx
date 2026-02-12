@@ -25,103 +25,80 @@ const modelNames: Record<string, string> = {
   GEMINI: "Gemini",
 };
 
-const modelAccents: Record<string, string> = {
-  CLAUDE: "border-b-amber-600 text-amber-700",
-  GPT: "border-b-emerald-600 text-emerald-700",
-  GEMINI: "border-b-violet-600 text-violet-700",
+const modelColors: Record<string, { bg: string; border: string; text: string }> = {
+  CLAUDE: { bg: "bg-amber-50", border: "border-amber-300", text: "text-amber-700" },
+  GPT: { bg: "bg-emerald-50", border: "border-emerald-300", text: "text-emerald-700" },
+  GEMINI: { bg: "bg-violet-50", border: "border-violet-300", text: "text-violet-700" },
 };
 
 export function AnalysisTabs({ analyses, language }: AnalysisTabsProps) {
-  const [activeModel, setActiveModel] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
 
   const handleReveal = (model: string) => {
-    setRevealed((prev) => new Set(prev).add(model));
-    setActiveModel(model);
+    setRevealed((prev) => {
+      const next = new Set(prev);
+      if (next.has(model)) {
+        next.delete(model);
+      } else {
+        next.add(model);
+      }
+      return next;
+    });
   };
-
-  const activeAnalysis = analyses.find((a) => a.model === activeModel);
-  const isHebrew = language === "HE";
 
   return (
     <div>
-      <h2
-        className={`text-2xl poem-title mb-6 ${isHebrew ? "text-right" : ""}`}
-        dir={isHebrew ? "rtl" : "ltr"}
-      >
-        {isHebrew ? "שלוש נקודות מבט" : "Three Perspectives"}
-      </h2>
-
-      <p
-        className={`text-charcoal-light mb-6 text-sm ${isHebrew ? "text-right" : ""}`}
-        dir={isHebrew ? "rtl" : "ltr"}
-      >
-        {isHebrew
-          ? "לחץ על שם המודל כדי לחשוף את הניתוח שלו"
-          : "Click on a model name to reveal its analysis"}
+      <h2 className="text-2xl poem-title mb-2">Three Perspectives</h2>
+      <p className="text-charcoal-light mb-6 text-sm">
+        Tap on a model to reveal its analysis
       </p>
 
-      {/* Tab buttons */}
-      <div className="flex border-b border-border mb-6" role="tablist">
+      {/* Stacked cards - works on all screen sizes */}
+      <div className="space-y-4">
         {analyses.map((analysis) => {
           const isRevealed = revealed.has(analysis.model);
-          const isActive = activeModel === analysis.model;
+          const colors = modelColors[analysis.model] || modelColors.CLAUDE;
 
           return (
-            <button
-              key={analysis.model}
-              role="tab"
-              aria-selected={isActive}
-              className={`px-6 py-3 text-sm font-medium border-b-2 transition-all ${
-                isActive
-                  ? modelAccents[analysis.model] || "border-b-sepia text-sepia"
-                  : isRevealed
-                    ? "border-b-transparent text-charcoal-light hover:text-charcoal"
-                    : "border-b-transparent text-charcoal-light/40 hover:text-charcoal-light"
-              }`}
-              onClick={() => handleReveal(analysis.model)}
-            >
-              <span className="flex items-center gap-2">
-                {modelNames[analysis.model] || analysis.model}
-                {!isRevealed && (
-                  <span className="text-xs opacity-50">
-                    {isHebrew ? "לחץ לחשיפה" : "click to reveal"}
+            <div key={analysis.model} className="rounded-lg border border-border overflow-hidden">
+              {/* Clickable header */}
+              <button
+                onClick={() => handleReveal(analysis.model)}
+                className={`w-full px-5 py-4 flex items-center justify-between transition-colors ${
+                  isRevealed
+                    ? `${colors.bg} ${colors.border} border-b`
+                    : "bg-white hover:bg-ivory-dark"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <ModelBadge model={analysis.model} />
+                  <span className={`font-medium text-sm ${isRevealed ? colors.text : "text-charcoal"}`}>
+                    {modelNames[analysis.model] || analysis.model}
                   </span>
-                )}
-              </span>
-            </button>
+                </div>
+                <span className={`text-xs transition-transform ${isRevealed ? "rotate-180" : ""}`}>
+                  &#9660;
+                </span>
+              </button>
+
+              {/* Expandable content */}
+              {isRevealed && (
+                <div className="p-5">
+                  <AnalysisPanel
+                    model={analysis.model}
+                    literaryAnalysis={analysis.literaryAnalysis}
+                    thematicAnalysis={analysis.thematicAnalysis}
+                    emotionalAnalysis={analysis.emotionalAnalysis}
+                    culturalAnalysis={analysis.culturalAnalysis}
+                    hebrewAnalysis={analysis.hebrewAnalysis}
+                    language={language}
+                  />
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
-
-      {/* Tab content */}
-      {activeModel && activeAnalysis ? (
-        <div className="transition-opacity duration-300">
-          <div className="mb-4">
-            <ModelBadge model={activeModel} />
-          </div>
-          <AnalysisPanel
-            model={activeAnalysis.model}
-            literaryAnalysis={activeAnalysis.literaryAnalysis}
-            thematicAnalysis={activeAnalysis.thematicAnalysis}
-            emotionalAnalysis={activeAnalysis.emotionalAnalysis}
-            culturalAnalysis={activeAnalysis.culturalAnalysis}
-            hebrewAnalysis={activeAnalysis.hebrewAnalysis}
-            language={language}
-          />
-        </div>
-      ) : (
-        <div
-          className="text-center py-12 text-charcoal-light/50"
-          dir={isHebrew ? "rtl" : "ltr"}
-        >
-          <p className="text-lg font-[family-name:var(--font-body)]">
-            {isHebrew
-              ? "בחר מודל כדי לראות את הניתוח שלו"
-              : "Choose a model above to see its analysis"}
-          </p>
-        </div>
-      )}
     </div>
   );
 }

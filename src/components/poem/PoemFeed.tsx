@@ -15,6 +15,8 @@ interface FeedPoem {
   content: string;
   contentHe?: string | null;
   art: { id: string; style: string }[];
+  publishedAt: string | null;
+  modelCount: number;
 }
 
 interface FeedResponse {
@@ -26,29 +28,60 @@ interface FeedResponse {
   };
 }
 
+function groupByDate(poems: FeedPoem[]): Record<string, FeedPoem[]> {
+  const groups: Record<string, FeedPoem[]> = {};
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+
+  poems.forEach((poem) => {
+    const date = poem.publishedAt ? new Date(poem.publishedAt) : new Date();
+    date.setHours(0, 0, 0, 0);
+
+    let key: string;
+    if (date.getTime() >= today.getTime()) {
+      key = "Today";
+    } else if (date.getTime() >= yesterday.getTime()) {
+      key = "Yesterday";
+    } else if (date.getTime() >= weekAgo.getTime()) {
+      key = "This Week";
+    } else {
+      key = "Earlier";
+    }
+
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(poem);
+  });
+
+  return groups;
+}
+
+const GROUP_ORDER = ["Today", "Yesterday", "This Week", "Earlier"];
+
 export function PoemFeed() {
   const [data, setData] = useState<FeedResponse | null>(null);
-  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    fetch(`/api/public/poems?page=${page}&limit=12`)
+    fetch("/api/public/poems?limit=50")
       .then((res) => res.json())
       .then((data) => {
         setData(data);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [page]);
+  }, []);
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className="space-y-6">
+        {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="card p-6 h-64 animate-pulse bg-ivory-dark"
+            className="card p-6 h-32 animate-pulse bg-ivory-dark"
           />
         ))}
       </div>
@@ -59,58 +92,52 @@ export function PoemFeed() {
     return (
       <div className="text-center py-20">
         <p className="text-charcoal-light font-[family-name:var(--font-body)] text-lg">
-          No poems published yet.
+          No poems analyzed yet.
         </p>
         <p className="text-charcoal-light/60 mt-2 text-sm">
-          Check back soon for fresh perspectives on poetry.
+          The first AI-analyzed poems will appear here soon.
         </p>
       </div>
     );
   }
 
-  return (
-    <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {data.poems.map((poem) => (
-          <PoemCard
-            key={poem.slug}
-            slug={poem.slug}
-            title={poem.title}
-            titleHe={poem.titleHe}
-            author={poem.author}
-            authorHe={poem.authorHe}
-            language={poem.language}
-            themes={(poem.themes as string[]) || []}
-            content={
-              poem.language === "HE" && poem.contentHe
-                ? poem.contentHe
-                : poem.content
-            }
-            hasArt={poem.art.length > 0}
-          />
-        ))}
-      </div>
+  const grouped = groupByDate(data.poems);
 
-      {data.pagination.totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-10">
-          {Array.from(
-            { length: data.pagination.totalPages },
-            (_, i) => i + 1
-          ).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPage(p)}
-              className={`px-4 py-2 rounded text-sm ${
-                p === page
-                  ? "bg-sepia text-white"
-                  : "bg-white border border-border hover:bg-ivory-dark"
-              }`}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-      )}
+  return (
+    <div className="space-y-10">
+      {GROUP_ORDER.map((group) => {
+        const poems = grouped[group];
+        if (!poems || poems.length === 0) return null;
+
+        return (
+          <div key={group}>
+            <h2 className="text-charcoal-light/60 text-xs uppercase tracking-widest mb-4 border-b border-border-light pb-2 font-[family-name:var(--font-ui)]">
+              {group}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {poems.map((poem) => (
+                <PoemCard
+                  key={poem.slug}
+                  slug={poem.slug}
+                  title={poem.title}
+                  titleHe={poem.titleHe}
+                  author={poem.author}
+                  authorHe={poem.authorHe}
+                  language={poem.language}
+                  themes={(poem.themes as string[]) || []}
+                  content={
+                    poem.language === "HE" && poem.contentHe
+                      ? poem.contentHe
+                      : poem.content
+                  }
+                  hasArt={poem.art.length > 0}
+                  modelCount={poem.modelCount}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

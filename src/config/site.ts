@@ -1,6 +1,6 @@
 export const SITE_CONFIG = {
-  name: "Shira",
-  nameHe: "שירה",
+  name: "shir.ai",
+  nameHe: "שיר.ai",
   tagline: "Three Minds, One Poem",
   taglineHe: "שלושה מוחות, שיר אחד",
   description:

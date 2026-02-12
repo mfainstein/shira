@@ -13,6 +13,7 @@ interface PoemCardProps {
   themes: string[];
   content: string;
   hasArt: boolean;
+  modelCount?: number;
 }
 
 export function PoemCard({
@@ -25,6 +26,7 @@ export function PoemCard({
   themes,
   content,
   hasArt,
+  modelCount,
 }: PoemCardProps) {
   const isHebrew = language === "HE";
   const displayTitle = isHebrew && titleHe ? titleHe : title;
@@ -79,7 +81,12 @@ export function PoemCard({
 
         <div className="flex items-center gap-2 flex-wrap">
           <LanguageBadge language={language} />
-          {themes.slice(0, 3).map((theme) => (
+          {modelCount !== undefined && modelCount > 0 && (
+            <span className="badge bg-sepia/10 text-sepia">
+              {modelCount} AI {modelCount === 1 ? "analysis" : "analyses"}
+            </span>
+          )}
+          {themes.slice(0, 2).map((theme) => (
             <span
               key={theme}
               className="badge bg-ivory-dark text-charcoal-light"
