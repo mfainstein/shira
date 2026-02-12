@@ -129,7 +129,7 @@ async function main() {
     }
 
     // Generate 1-3 poems per run
-    const poemsToGenerate = randomInt(1, 3);
+    const poemsToGenerate = 1;
     console.log(
       `[Shira Auto-Generate] Generating ${poemsToGenerate} poem(s) this run`
     );

@@ -94,13 +94,13 @@ export function PoemDisplay({
         </div>
       )}
 
-      {/* Show English version for Hebrew poems */}
-      {isHebrew && content && content !== contentHe && (
-        <div className="mt-12 pt-8 border-t border-border-light">
-          <p className="text-sm text-charcoal-light font-[family-name:var(--font-ui)] mb-4" dir="ltr">
-            English translation
-          </p>
-          <div className="poem-text text-charcoal-light text-sm" dir="ltr">
+      {/* Show English translation for Hebrew poems */}
+      {isHebrew && content && contentHe && content !== contentHe && (
+        <details className="mt-12 pt-8 border-t border-border-light">
+          <summary className="text-sm text-charcoal-light font-[family-name:var(--font-ui)] cursor-pointer hover:text-sepia transition-colors" dir="ltr">
+            Show English translation
+          </summary>
+          <div className="poem-text text-charcoal-light text-sm mt-4" dir="ltr">
             {formatStanzas(content).map((stanza, i) => (
               <div key={i} className="stanza">
                 {stanza.map((line, j) => (
@@ -109,7 +109,7 @@ export function PoemDisplay({
               </div>
             ))}
           </div>
-        </div>
+        </details>
       )}
     </div>
   );

@@ -106,21 +106,29 @@ export default async function PoemPage({ params }: PageProps) {
         </section>
       )}
 
-      {/* 5. Comparison */}
+      {/* 5. Comparison - collapsible */}
       {poem.comparison && (
         <section className="max-w-4xl mx-auto px-4 py-12 border-t border-border-light">
-          <ComparisonView
-            comparisonContent={poem.comparison.comparisonContent}
-            agreements={poem.comparison.agreements as string[]}
-            disagreements={poem.comparison.disagreements as string[]}
-            insights={
-              poem.comparison.insights as {
-                model: string;
-                insight: string;
-              }[]
-            }
-            language={poem.language}
-          />
+          <details className="group">
+            <summary className="text-2xl poem-title cursor-pointer flex items-center justify-between hover:text-sepia transition-colors">
+              <span>Where They Agree and Diverge</span>
+              <span className="text-sm text-charcoal-light group-open:rotate-180 transition-transform">&#9660;</span>
+            </summary>
+            <div className="pt-6">
+              <ComparisonView
+                comparisonContent={poem.comparison.comparisonContent}
+                agreements={poem.comparison.agreements as string[]}
+                disagreements={poem.comparison.disagreements as string[]}
+                insights={
+                  poem.comparison.insights as {
+                    model: string;
+                    insight: string;
+                  }[]
+                }
+                language={poem.language}
+              />
+            </div>
+          </details>
         </section>
       )}
 

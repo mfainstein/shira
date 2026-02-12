@@ -102,14 +102,27 @@ async function acquireFoundPoem(
 
   // Use LLM to extract poem from research
   const llm = getLLMAdapter("claude-opus-4-5");
+
+  const hebrewExtraction = params.language === "HE"
+    ? `The poem should be in Hebrew. You MUST provide:
+- "titleHe": the Hebrew title
+- "authorHe": the author name in Hebrew (if known)
+- "contentHe": the full poem text in Hebrew
+- "title": English translation of the title
+- "author": author name in English
+- "content": English translation of the poem (translate it yourself if needed)`
+    : `Provide "title", "author", and "content" (the full poem text in English).`;
+
   const extractionResponse = await llm.generate(
     `Based on this research about poems, extract or identify one complete poem. If the full text is available, include it. If not, provide the poem's title, author, and whatever text is available.
+
+${hebrewExtraction}
 
 Research results: ${research.answer || "No direct answer"}
 Sources: ${research.sources.map((s) => s.snippet).join("\n")}
 
 Respond in JSON format:
-{"title": "...", "author": "...", "content": "full poem text...", "themes": ["theme1", "theme2"]}`,
+{"title": "...", "titleHe": "...", "author": "...", "authorHe": "...", "content": "English text...", "contentHe": "Hebrew text...", "themes": ["theme1", "theme2"]}`,
     { temperature: 0.3 }
   );
 
@@ -121,8 +134,11 @@ Respond in JSON format:
       const poem = await db.poem.create({
         data: {
           title: extracted.title,
+          titleHe: extracted.titleHe || null,
           author: extracted.author || "Unknown",
+          authorHe: extracted.authorHe || null,
           content: extracted.content,
+          contentHe: extracted.contentHe || null,
           language: params.language,
           source: "FOUND",
           themes: extracted.themes || themes,
@@ -132,8 +148,8 @@ Respond in JSON format:
 
       return {
         poemId: poem.id,
-        title: poem.title,
-        content: poem.content,
+        title: params.language === "HE" ? (poem.titleHe || poem.title) : poem.title,
+        content: params.language === "HE" ? (poem.contentHe || poem.content) : poem.content,
         language: params.language,
         themes: extracted.themes || themes,
         cost: extractionResponse.cost + (research.cost || 0),
@@ -163,8 +179,16 @@ async function acquireAIPoem(
 
   const languageInstruction =
     params.language === "HE"
-      ? "Write the poem entirely in Hebrew. Include rich Hebrew poetic devices."
-      : "Write the poem in English.";
+      ? `Write the poem entirely in Hebrew. Include rich Hebrew poetic devices.
+
+You MUST provide ALL of these fields:
+- "titleHe": the Hebrew title
+- "title": English translation of the title
+- "contentHe": the full poem in Hebrew with \\n for line breaks
+- "content": an English translation of the poem
+- "authorHe": "AI" in Hebrew (e.g. "בינה מלאכותית")`
+      : `Write the poem in English.
+Provide "title" and "content" (full poem with \\n for line breaks).`;
 
   const response = await llm.generate(
     `Write an original poem about the following themes: ${themes.join(", ")}.
@@ -174,8 +198,8 @@ ${languageInstruction}
 The poem should be between 12-40 lines, with clear stanza breaks. It should be literary, evocative, and suitable for serious literary analysis.
 
 Respond in JSON format:
-{"title": "...", "titleHe": "..." (if Hebrew), "content": "full poem with \\n for line breaks", "themes": ["theme1", "theme2", "theme3"]}`,
-    { temperature: 0.9, maxTokens: 2000 }
+{"title": "...", "titleHe": "...", "content": "...", "contentHe": "...", "themes": ["theme1", "theme2", "theme3"]}`,
+    { temperature: 0.9, maxTokens: 3000 }
   );
 
   const jsonMatch = response.content.match(/\{[\s\S]*\}/);
@@ -190,9 +214,11 @@ Respond in JSON format:
   const poem = await db.poem.create({
     data: {
       title: generated.title,
-      titleHe: generated.titleHe,
+      titleHe: generated.titleHe || null,
       author: `AI (${modelEnum})`,
+      authorHe: generated.authorHe || null,
       content: generated.content,
+      contentHe: generated.contentHe || null,
       language: params.language,
       source: "AI_GENERATED",
       sourceModel: modelEnum,
@@ -203,8 +229,8 @@ Respond in JSON format:
 
   return {
     poemId: poem.id,
-    title: poem.title,
-    content: poem.content,
+    title: params.language === "HE" ? (poem.titleHe || poem.title) : poem.title,
+    content: params.language === "HE" ? (poem.contentHe || poem.content) : poem.content,
     language: params.language,
     themes: generated.themes || themes,
     cost: response.cost,

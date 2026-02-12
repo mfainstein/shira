@@ -27,10 +27,6 @@ export function ComparisonView({
 
   return (
     <div>
-      <h2 className="text-2xl poem-title mb-6">
-        Where They Agree and Diverge
-      </h2>
-
       {/* View toggle */}
       <div className="flex gap-2 mb-6">
         <button

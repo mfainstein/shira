@@ -105,7 +105,7 @@ async function handleCron(request: NextRequest) {
   }> = [];
 
   try {
-    const poemsToGenerate = randomInt(1, 3);
+    const poemsToGenerate = 1;
 
     for (let i = 0; i < poemsToGenerate; i++) {
       const params = getRandomParams();
