@@ -1,4 +1,4 @@
-import { createCanvas, CanvasRenderingContext2D } from "canvas";
+import sharp from "sharp";
 import { claude } from "@/lib/llm";
 import {
   DrawCommand,
@@ -7,68 +7,106 @@ import {
   ArtGenerationResult,
 } from "./types";
 
-function executeDrawCommands(
-  ctx: CanvasRenderingContext2D,
-  paths: IllustrationPath[],
+function commandsToSVGPath(commands: DrawCommand[]): string {
+  const parts: string[] = [];
+
+  for (const cmd of commands) {
+    const x = cmd.x || 0;
+    const y = cmd.y || 0;
+
+    switch (cmd.type) {
+      case "moveTo":
+        parts.push(`M ${x} ${y}`);
+        break;
+      case "lineTo":
+        parts.push(`L ${x} ${y}`);
+        break;
+      case "quadraticCurveTo":
+        parts.push(`Q ${cmd.x1 || 0} ${cmd.y1 || 0} ${x} ${y}`);
+        break;
+      case "bezierCurveTo":
+        parts.push(
+          `C ${cmd.x1 || 0} ${cmd.y1 || 0} ${cmd.x2 || 0} ${cmd.y2 || 0} ${x} ${y}`
+        );
+        break;
+      case "closePath":
+        parts.push("Z");
+        break;
+      case "arc": {
+        // Convert arc to SVG arc commands
+        const radius = cmd.radius || 10;
+        const startAngle = cmd.startAngle || 0;
+        const endAngle = cmd.endAngle || Math.PI * 2;
+        const isFullCircle = Math.abs(endAngle - startAngle) >= Math.PI * 2 - 0.01;
+
+        if (isFullCircle) {
+          // Full circle: two half-arcs
+          parts.push(
+            `M ${x + radius} ${y}`,
+            `A ${radius} ${radius} 0 1 1 ${x - radius} ${y}`,
+            `A ${radius} ${radius} 0 1 1 ${x + radius} ${y}`,
+            "Z"
+          );
+        } else {
+          const sx = x + radius * Math.cos(startAngle);
+          const sy = y + radius * Math.sin(startAngle);
+          const ex = x + radius * Math.cos(endAngle);
+          const ey = y + radius * Math.sin(endAngle);
+          const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
+          parts.push(
+            `M ${sx} ${sy}`,
+            `A ${radius} ${radius} 0 ${largeArc} 1 ${ex} ${ey}`
+          );
+        }
+        break;
+      }
+    }
+  }
+
+  return parts.join(" ");
+}
+
+function illustrationToSVG(
+  illustration: IllustrationData,
+  width: number,
+  height: number,
+  viewBoxWidth: number,
+  viewBoxHeight: number,
   offsetX: number,
   offsetY: number,
   scale: number
-): void {
-  for (const path of paths) {
-    ctx.beginPath();
-    ctx.lineWidth = (path.lineWidth || 2) * scale;
+): string {
+  const pathElements: string[] = [];
 
-    for (const cmd of path.commands) {
-      const x = (cmd.x || 0) * scale + offsetX;
-      const y = (cmd.y || 0) * scale + offsetY;
+  for (const path of illustration.paths) {
+    // Scale and offset commands
+    const scaledCommands: DrawCommand[] = path.commands.map((cmd) => {
+      const scaled: DrawCommand = { ...cmd };
+      if (scaled.x !== undefined) scaled.x = scaled.x * scale + offsetX;
+      if (scaled.y !== undefined) scaled.y = scaled.y * scale + offsetY;
+      if (scaled.x1 !== undefined) scaled.x1 = scaled.x1 * scale + offsetX;
+      if (scaled.y1 !== undefined) scaled.y1 = scaled.y1 * scale + offsetY;
+      if (scaled.x2 !== undefined) scaled.x2 = scaled.x2 * scale + offsetX;
+      if (scaled.y2 !== undefined) scaled.y2 = scaled.y2 * scale + offsetY;
+      if (scaled.radius !== undefined) scaled.radius = scaled.radius * scale;
+      return scaled;
+    });
 
-      switch (cmd.type) {
-        case "moveTo":
-          ctx.moveTo(x, y);
-          break;
-        case "lineTo":
-          ctx.lineTo(x, y);
-          break;
-        case "arc":
-          ctx.arc(
-            x,
-            y,
-            (cmd.radius || 10) * scale,
-            cmd.startAngle || 0,
-            cmd.endAngle || Math.PI * 2
-          );
-          break;
-        case "quadraticCurveTo":
-          ctx.quadraticCurveTo(
-            (cmd.x1 || 0) * scale + offsetX,
-            (cmd.y1 || 0) * scale + offsetY,
-            x,
-            y
-          );
-          break;
-        case "bezierCurveTo":
-          ctx.bezierCurveTo(
-            (cmd.x1 || 0) * scale + offsetX,
-            (cmd.y1 || 0) * scale + offsetY,
-            (cmd.x2 || 0) * scale + offsetX,
-            (cmd.y2 || 0) * scale + offsetY,
-            x,
-            y
-          );
-          break;
-        case "closePath":
-          ctx.closePath();
-          break;
-      }
-    }
+    const d = commandsToSVGPath(scaledCommands);
+    const strokeWidth = (path.lineWidth || 2) * scale;
+    const fill = path.fill ? "#2c2c2c" : "none";
+    const stroke = path.stroke !== false ? "#2c2c2c" : "none";
 
-    if (path.fill) {
-      ctx.fill();
-    }
-    if (path.stroke !== false) {
-      ctx.stroke();
-    }
+    pathElements.push(
+      `<path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round"/>`
+    );
   }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${viewBoxWidth} ${viewBoxHeight}">
+  <rect width="${viewBoxWidth}" height="${viewBoxHeight}" fill="#faf8f5"/>
+  <rect x="30" y="30" width="${viewBoxWidth - 60}" height="${viewBoxHeight - 60}" fill="none" stroke="#d4c5b0" stroke-width="2"/>
+  ${pathElements.join("\n  ")}
+</svg>`;
 }
 
 function getDefaultIllustration(): IllustrationData {
@@ -214,37 +252,39 @@ export async function createMinimalistArt(
   content: string,
   themes: string[]
 ): Promise<ArtGenerationResult> {
-  const canvas = createCanvas(1200, 800);
-  const ctx = canvas.getContext("2d");
-
-  // Warm ivory background
-  ctx.fillStyle = "#faf8f5";
-  ctx.fillRect(0, 0, 1200, 800);
-
-  // Subtle border
-  ctx.strokeStyle = "#d4c5b0";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(30, 30, 1140, 740);
+  const width = 1200;
+  const height = 800;
 
   // Generate illustration
   const illustration = await generateIllustration(title, content, themes);
 
-  // Draw the illustration centered
-  ctx.strokeStyle = "#2c2c2c";
-  ctx.fillStyle = "#2c2c2c";
-
+  // Scale and center the illustration on the canvas
   const scale = 1.5;
-  const offsetX = (1200 - 400 * scale) / 2;
-  const offsetY = (800 - 500 * scale) / 2;
+  const offsetX = (width - 400 * scale) / 2;
+  const offsetY = (height - 500 * scale) / 2;
 
-  executeDrawCommands(ctx, illustration.paths, offsetX, offsetY, scale);
+  const svg = illustrationToSVG(
+    illustration,
+    width,
+    height,
+    width,
+    height,
+    offsetX,
+    offsetY,
+    scale
+  );
 
-  const prompt = `Minimalist pen-and-ink illustration for poem "${title}" with themes: ${themes.join(", ")}`;
+  // Convert SVG to PNG via Sharp
+  const imageData = await sharp(Buffer.from(svg))
+    .png()
+    .toBuffer();
+
+  const artPrompt = `Minimalist pen-and-ink illustration for poem "${title}" with themes: ${themes.join(", ")}`;
 
   return {
-    imageData: canvas.toBuffer("image/png"),
+    imageData,
     drawCommands: illustration,
-    prompt,
+    prompt: artPrompt,
     style: "MINIMALIST",
   };
 }

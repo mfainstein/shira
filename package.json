@@ -24,7 +24,6 @@
     "@prisma/client": "^5.22.0",
     "@tailwindcss/typography": "^0.5.19",
     "bullmq": "^5.67.2",
-    "canvas": "^2.11.2",
     "ioredis": "^5.9.2",
     "next": "16.1.6",
     "openai": "^6.17.0",
@@ -34,6 +33,9 @@
     "react-markdown": "^10.1.0",
     "sharp": "^0.33.2",
     "slugify": "^1.6.6"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
