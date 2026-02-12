@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import slugify from "slugify";
 
 const db = new PrismaClient();
 
@@ -362,7 +363,7 @@ async function main() {
       continue;
     }
 
-    await db.poem.create({
+    const created = await db.poem.create({
       data: {
         title: poem.title,
         titleHe: poem.titleHe,
@@ -375,6 +376,23 @@ async function main() {
         themes: poem.themes,
         year: poem.year,
         isPublicDomain: poem.isPublicDomain,
+      },
+    });
+
+    // Create a published PoemFeature so it shows on the homepage
+    const baseSlug = slugify(poem.title, {
+      lower: true,
+      strict: true,
+      remove: /[*+~.()'\"!:@]/g,
+    });
+    const slug = `${baseSlug}-${Date.now().toString(36)}`;
+
+    await db.poemFeature.create({
+      data: {
+        poemId: created.id,
+        slug,
+        status: "PUBLISHED",
+        publishedAt: new Date(),
       },
     });
 
