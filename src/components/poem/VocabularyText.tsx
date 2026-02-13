@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { normalizeWord } from "@/lib/vocabulary-utils";
 
 interface VocabularyTextProps {
   text: string;
@@ -14,7 +15,7 @@ export function VocabularyText({ text, vocabulary, isHebrew }: VocabularyTextPro
 
   const handleWordClick = useCallback(
     (word: string, event: React.MouseEvent) => {
-      const key = word.toLowerCase().replace(/[.,;:!?()"""''—\-]/g, "");
+      const key = normalizeWord(word);
       if (vocabulary[key]) {
         if (activeWord === key) {
           setActiveWord(null);
@@ -63,7 +64,7 @@ export function VocabularyText({ text, vocabulary, isHebrew }: VocabularyTextPro
                 return <span key={wordIdx}>{segment}</span>;
               }
 
-              const cleanWord = segment.toLowerCase().replace(/[.,;:!?()"""''—\-]/g, "");
+              const cleanWord = normalizeWord(segment);
               const hasDefinition = !!vocabulary[cleanWord];
 
               if (hasDefinition) {

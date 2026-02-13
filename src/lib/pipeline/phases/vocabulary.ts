@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { getLLMAdapter } from "@/lib/llm";
 import { safeJsonParse } from "../utils";
+import { normalizeWord } from "@/lib/vocabulary-utils";
 
 interface VocabularyEntry {
   word: string;
@@ -19,8 +20,8 @@ export async function generateVocabulary(
 
   const languageInstruction =
     params.language === "HE"
-      ? "The poem is in Hebrew. Identify non-basic Hebrew words that an intermediate Hebrew reader might not know. Provide definitions in English."
-      : "Identify non-basic English words that a typical reader might not know. Provide concise definitions.";
+      ? "The poem is in Hebrew. Identify non-basic Hebrew words that an intermediate Hebrew reader might not know. Provide definitions in English. Return words WITHOUT niqqud (vowel points) and WITHOUT surrounding punctuation — just the bare Hebrew word."
+      : "Identify non-basic English words that a typical reader might not know. Provide concise definitions. Return words WITHOUT surrounding punctuation — just the bare word.";
 
   const response = await llm.generate(
     `Analyze this poem and identify words that are not basic everyday vocabulary — literary, archaic, technical, or uncommon words that a reader might want to look up.
@@ -44,10 +45,11 @@ Respond ONLY with the JSON array, no other text:
     if (jsonMatch) {
       const entries = safeJsonParse<VocabularyEntry[]>(jsonMatch[0]);
 
-      // Store as a map: word -> definition
+      // Store as a map: normalized word -> definition
       const vocabMap: Record<string, string> = {};
       for (const entry of entries) {
-        vocabMap[entry.word.toLowerCase()] = entry.definition;
+        const key = normalizeWord(entry.word);
+        if (key) vocabMap[key] = entry.definition;
       }
 
       await db.poem.update({
