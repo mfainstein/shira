@@ -39,6 +39,16 @@ export function extractJsonObject<T = unknown>(content: string): T | null {
   try {
     return safeJsonParse<T>(match[0]);
   } catch {
+    // Attempt to repair truncated JSON (missing closing braces)
+    let candidate = match[0];
+    for (let i = 0; i < 5; i++) {
+      candidate += "}";
+      try {
+        return safeJsonParse<T>(candidate);
+      } catch {
+        // keep trying
+      }
+    }
     return null;
   }
 }
