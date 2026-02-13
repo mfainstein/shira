@@ -46,7 +46,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const description = lines.slice(0, 2).join(" / ") + (lines.length > 2 ? " ..." : "");
 
   const url = `${SITE_CONFIG.url}/poems/${slug}`;
-  const imageUrl = `${SITE_CONFIG.url}/api/public/poems/${slug}/art`;
 
   return {
     title: `${displayTitle} — ${displayAuthor}`,
@@ -57,20 +56,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       url,
       siteName: SITE_CONFIG.name,
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 800,
-          alt: `Artwork for ${poem.title}`,
-        },
-      ],
     },
     twitter: {
       card: "summary_large_image",
       title: `${displayTitle} — ${displayAuthor}`,
       description,
-      images: [imageUrl],
     },
   };
 }
