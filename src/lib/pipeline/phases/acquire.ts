@@ -256,7 +256,7 @@ Respond in JSON format:
       title: generated.title,
       titleHe: generated.titleHe || null,
       author: `AI (${modelEnum})`,
-      authorHe: generated.authorHe || null,
+      authorHe: `בינה מלאכותית (${modelEnum})`,
       content: generated.content,
       contentHe: generated.contentHe || null,
       language: params.language,
