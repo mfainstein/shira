@@ -33,6 +33,10 @@ export const POETRYDB_CONFIG = {
   } as Record<string, string[]>,
 };
 
+export const ELEVENLABS_CONFIG = {
+  ttsModel: "eleven_multilingual_v2",
+};
+
 export const QUEUE_CONFIG = {
   concurrency: PIPELINE_CONFIG.concurrency,
   maxRetries: PIPELINE_CONFIG.maxRetries,

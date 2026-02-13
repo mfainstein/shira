@@ -28,6 +28,11 @@ export async function GET(
             select: { id: true, style: true, drawCommands: true },
             take: 1,
           },
+          audio: {
+            where: { status: "COMPLETED" },
+            select: { id: true, voiceName: true, durationMs: true },
+            take: 1,
+          },
           comparison: {
             select: {
               comparisonContent: true,

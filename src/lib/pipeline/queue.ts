@@ -37,6 +37,7 @@ export interface AnalysisJobResult {
   poemId: string;
   analysesCompleted: number;
   artGenerated: boolean;
+  audioGenerated: boolean;
   comparisonGenerated: boolean;
   totalCost: number;
 }

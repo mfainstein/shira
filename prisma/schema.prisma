@@ -45,6 +45,7 @@ enum JobStatus {
   QUEUED
   ACQUIRING
   GENERATING_ART
+  GENERATING_AUDIO
   ANALYZING
   COMPARING
   REVIEW
@@ -73,6 +74,7 @@ model Poem {
 
   analyses   PoemAnalysis[]
   art        PoemArt[]
+  audio      PoemAudio[]
   comparison PoemComparison?
   feature    PoemFeature?
   jobs       AnalysisJob[]
@@ -107,6 +109,23 @@ model PoemArt {
   imageData    Bytes?
   drawCommands Json?
   prompt       String         @db.Text
+  status       AnalysisStatus @default(PENDING)
+  createdAt    DateTime       @default(now())
+
+  poem Poem @relation(fields: [poemId], references: [id], onDelete: Cascade)
+}
+
+model PoemAudio {
+  id           String         @id @default(cuid())
+  poemId       String
+  voiceData    Bytes?
+  musicData    Bytes?
+  combinedData Bytes?
+  voiceId      String
+  voiceName    String
+  musicPrompt  String         @db.Text
+  language     Language
+  durationMs   Int?
   status       AnalysisStatus @default(PENDING)
   createdAt    DateTime       @default(now())
 

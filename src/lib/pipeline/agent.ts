@@ -1,7 +1,7 @@
 import { Job } from "bullmq";
 import { PrismaClient } from "@prisma/client";
 import slugify from "slugify";
-import { acquirePoem, generatePoemArt, analyzePoem, compareAnalyses, generateVocabulary } from "./phases";
+import { acquirePoem, generatePoemArt, generatePoemAudioPhase, analyzePoem, compareAnalyses, generateVocabulary } from "./phases";
 import { AnalysisJobData, AnalysisJobResult } from "./queue";
 
 export interface AgentConfig {
@@ -64,10 +64,32 @@ export class PoetryAnalysisAgent {
         error: error instanceof Error ? error.message : "Unknown",
       });
     }
-    await this.updateProgress(30, "GENERATING_ART", "Artwork complete");
+    await this.updateProgress(25, "GENERATING_ART", "Artwork complete");
 
-    // Phase 3: Analyze with all 3 AIs (30-70%)
-    await this.updateProgress(35, "ANALYZING", "Analyzing poem with three AI models");
+    // Phase 2b: Generate audio (25-35%)
+    await this.updateProgress(28, "GENERATING_AUDIO", "Generating voiceover and music");
+    let audioGenerated = false;
+    try {
+      await generatePoemAudioPhase(db, {
+        poemId: acquired.poemId,
+        title: acquired.title,
+        content: acquired.content,
+        themes: acquired.themes,
+        language: params.language,
+      });
+      audioGenerated = true;
+      await this.log("audio", "generate_audio", {}, { success: true });
+    } catch (error) {
+      console.error("Audio generation failed:", error);
+      await this.log("audio", "generate_audio", {}, {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown",
+      });
+    }
+    await this.updateProgress(35, "GENERATING_AUDIO", "Audio complete");
+
+    // Phase 3: Analyze with all 3 AIs (35-70%)
+    await this.updateProgress(38, "ANALYZING", "Analyzing poem with three AI models");
 
     // Load the poem to get full details
     const poem = await db.poem.findUnique({ where: { id: acquired.poemId } });
@@ -157,6 +179,7 @@ export class PoetryAnalysisAgent {
       poemId: acquired.poemId,
       analysesCompleted: analysisResult.completed,
       artGenerated,
+      audioGenerated,
       comparisonGenerated,
       totalCost: this.totalCost,
     };
