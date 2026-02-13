@@ -38,6 +38,7 @@ export function VocabularyText({ text, vocabulary, isHebrew }: VocabularyTextPro
   }, []);
 
   const lines = text.split("\n");
+  let firstLineRendered = false;
 
   return (
     <div className="relative" onClick={(e) => {
@@ -50,10 +51,13 @@ export function VocabularyText({ text, vocabulary, isHebrew }: VocabularyTextPro
           return <div key={lineIdx} className="h-4" />;
         }
 
+        const isFirstLine = !firstLineRendered;
+        if (isFirstLine) firstLineRendered = true;
+
         const words = line.split(/(\s+)/);
 
         return (
-          <p key={lineIdx} className="leading-relaxed">
+          <p key={lineIdx} className={`leading-relaxed ${isFirstLine ? "drop-cap" : ""}`}>
             {words.map((segment, wordIdx) => {
               if (/^\s+$/.test(segment)) {
                 return <span key={wordIdx}>{segment}</span>;

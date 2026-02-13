@@ -85,7 +85,7 @@ export function PoemDisplay({
           {formatStanzas(displayContent).map((stanza, i) => (
             <div key={i} className="stanza">
               {stanza.map((line, j) => (
-                <p key={j} className="leading-relaxed">
+                <p key={j} className={`leading-relaxed ${i === 0 && j === 0 ? "drop-cap" : ""}`}>
                   {line}
                 </p>
               ))}
