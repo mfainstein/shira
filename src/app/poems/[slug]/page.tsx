@@ -7,6 +7,7 @@ import { PoemArt } from "@/components/poem/PoemArt";
 import { AnalysisTabs } from "@/components/analysis/AnalysisTabs";
 import { ComparisonView } from "@/components/analysis/ComparisonView";
 import { ShareButton } from "@/components/ui/ShareButton";
+import { AudioPlayer } from "@/components/poem/AudioPlayer";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -89,6 +90,11 @@ export default async function PoemPage({ params }: PageProps) {
             select: { id: true, style: true, drawCommands: true },
             take: 1,
           },
+          audio: {
+            where: { status: "COMPLETED" },
+            select: { id: true },
+            take: 1,
+          },
           comparison: {
             select: {
               comparisonContent: true,
@@ -108,6 +114,7 @@ export default async function PoemPage({ params }: PageProps) {
 
   const { poem } = feature;
   const art = poem.art[0];
+  const hasAudio = poem.audio.length > 0;
 
   return (
     <main className="min-h-screen">
@@ -145,6 +152,13 @@ export default async function PoemPage({ params }: PageProps) {
           vocabulary={poem.vocabulary as Record<string, string> | null}
         />
       </section>
+
+      {/* 2b. Audio player */}
+      {hasAudio && (
+        <section className="max-w-4xl mx-auto px-4 pb-8">
+          <AudioPlayer slug={slug} />
+        </section>
+      )}
 
       {/* 3. Ornamental divider */}
       <div className="max-w-4xl mx-auto px-4">
