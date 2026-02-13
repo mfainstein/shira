@@ -59,33 +59,46 @@ async function acquireFoundPoem(
     ? params.topic.split(",").map((t) => t.trim())
     : ["beauty", "nature"];
 
+  // Gather titles we already have, to avoid duplicates
+  const existingPoems = await db.poem.findMany({
+    select: { title: true, author: true },
+    take: 200,
+  });
+  const existingTitles = new Set(
+    existingPoems.map((p) => `${p.title.toLowerCase()}::${p.author.toLowerCase()}`)
+  );
+
   if (params.language === "EN") {
     // Try PoetryDB first
     const poetryDBPoem = await findPoemForThemes(themes);
     if (poetryDBPoem) {
-      const content = poetryDBToContent(poetryDBPoem);
-      const poemThemes = guessThemes(poetryDBPoem);
+      const dupeKey = `${poetryDBPoem.title.toLowerCase()}::${poetryDBPoem.author.toLowerCase()}`;
+      if (!existingTitles.has(dupeKey)) {
+        const content = poetryDBToContent(poetryDBPoem);
+        const poemThemes = guessThemes(poetryDBPoem);
 
-      const poem = await db.poem.create({
-        data: {
-          title: poetryDBPoem.title,
-          author: poetryDBPoem.author,
-          content,
+        const poem = await db.poem.create({
+          data: {
+            title: poetryDBPoem.title,
+            author: poetryDBPoem.author,
+            content,
+            language: "EN",
+            source: "FOUND",
+            themes: poemThemes,
+            isPublicDomain: true,
+          },
+        });
+
+        return {
+          poemId: poem.id,
+          title: poem.title,
+          content: poem.content,
           language: "EN",
-          source: "FOUND",
           themes: poemThemes,
-          isPublicDomain: true,
-        },
-      });
-
-      return {
-        poemId: poem.id,
-        title: poem.title,
-        content: poem.content,
-        language: "EN",
-        themes: poemThemes,
-        cost: 0,
-      };
+          cost: 0,
+        };
+      }
+      // Poem already exists — fall through to research
     }
   }
 
@@ -114,10 +127,19 @@ async function acquireFoundPoem(
 - "content": English translation of the poem (translate it yourself if needed)`
     : `Provide "title", "author", and "content" (the full poem text in English).`;
 
+  // Build exclusion list to avoid duplicate poems
+  const existingTitlesList = existingPoems
+    .slice(0, 30)
+    .map((p) => `"${p.title}" by ${p.author}`)
+    .join(", ");
+  const exclusionNote = existingTitlesList
+    ? `\n\nIMPORTANT: We already have these poems, so choose a DIFFERENT one: ${existingTitlesList}`
+    : "";
+
   const extractionResponse = await llm.generate(
     `Based on this research about poems, extract or identify one complete poem. If the full text is available, include it. If not, provide the poem's title, author, and whatever text is available.
 
-${hebrewExtraction}
+${hebrewExtraction}${exclusionNote}
 
 Research results: ${research.answer || "No direct answer"}
 Sources: ${research.sources.map((s) => s.snippet).join("\n")}
@@ -133,29 +155,36 @@ Respond in JSON format:
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const extracted = safeJsonParse<any>(jsonMatch[0]);
 
-      const poem = await db.poem.create({
-        data: {
-          title: extracted.title,
-          titleHe: extracted.titleHe || null,
-          author: extracted.author || "Unknown",
-          authorHe: extracted.authorHe || null,
-          content: extracted.content,
-          contentHe: extracted.contentHe || null,
-          language: params.language,
-          source: "FOUND",
-          themes: extracted.themes || themes,
-          isPublicDomain: true,
-        },
-      });
+      // Check for duplicate
+      const dupeKey = `${(extracted.title || "").toLowerCase()}::${(extracted.author || "").toLowerCase()}`;
+      if (existingTitles.has(dupeKey)) {
+        console.log(`[Acquire] Skipping duplicate found poem: ${extracted.title} by ${extracted.author}`);
+        // Fall through to AI generation
+      } else {
+        const poem = await db.poem.create({
+          data: {
+            title: extracted.title,
+            titleHe: extracted.titleHe || null,
+            author: extracted.author || "Unknown",
+            authorHe: extracted.authorHe || null,
+            content: extracted.content,
+            contentHe: extracted.contentHe || null,
+            language: params.language,
+            source: "FOUND",
+            themes: extracted.themes || themes,
+            isPublicDomain: true,
+          },
+        });
 
-      return {
-        poemId: poem.id,
-        title: params.language === "HE" ? (poem.titleHe || poem.title) : poem.title,
-        content: params.language === "HE" ? (poem.contentHe || poem.content) : poem.content,
-        language: params.language,
-        themes: extracted.themes || themes,
-        cost: extractionResponse.cost + (research.cost || 0),
-      };
+        return {
+          poemId: poem.id,
+          title: params.language === "HE" ? (poem.titleHe || poem.title) : poem.title,
+          content: params.language === "HE" ? (poem.contentHe || poem.content) : poem.content,
+          language: params.language,
+          themes: extracted.themes || themes,
+          cost: extractionResponse.cost + (research.cost || 0),
+        };
+      }
     }
   } catch {
     // Fall through to AI generation
@@ -179,6 +208,17 @@ async function acquireAIPoem(
     ? params.topic.split(",").map((t) => t.trim())
     : ["beauty", "nature"];
 
+  // Get existing titles to encourage uniqueness
+  const existingPoems = await db.poem.findMany({
+    where: { source: "AI_GENERATED" },
+    select: { title: true },
+    orderBy: { createdAt: "desc" },
+    take: 30,
+  });
+  const existingNote = existingPoems.length > 0
+    ? `\n\nIMPORTANT: Create something ORIGINAL and DIFFERENT from these existing poems in our collection: ${existingPoems.map((p) => `"${p.title}"`).join(", ")}`
+    : "";
+
   const languageInstruction =
     params.language === "HE"
       ? `Write the poem entirely in Hebrew. Include rich Hebrew poetic devices.
@@ -197,7 +237,7 @@ Provide "title" and "content" (full poem with \\n for line breaks).`;
 
 ${languageInstruction}
 
-The poem should be between 12-40 lines, with clear stanza breaks. It should be literary, evocative, and suitable for serious literary analysis.
+The poem should be between 12-40 lines, with clear stanza breaks. It should be literary, evocative, and suitable for serious literary analysis.${existingNote}
 
 Respond in JSON format:
 {"title": "...", "titleHe": "...", "content": "...", "contentHe": "...", "themes": ["theme1", "theme2", "theme3"]}`,

@@ -47,18 +47,40 @@ const SOURCE_MODELS = ["claude-opus-4-5", "gpt-5.1", "gemini-3-flash"];
 function randomChoice<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
+/**
+ * Pick a theme that hasn't been used recently.
+ * Queries recent AnalysisJobs to find which topics were already used,
+ * then picks from the unused pool. If all themes have been used,
+ * resets and picks from the full list.
+ */
+async function pickFreshTheme(
+  language: Language
+): Promise<string> {
+  const themes = language === "HE" ? HEBREW_THEMES : ENGLISH_THEMES;
 
-function randomInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  // Get topics used in recent jobs (up to the size of the theme list)
+  const recentJobs = await db.analysisJob.findMany({
+    where: {
+      topic: { not: null },
+      status: { not: "FAILED" },
+    },
+    orderBy: { createdAt: "desc" },
+    take: themes.length,
+    select: { topic: true },
+  });
+
+  const recentTopics = new Set(recentJobs.map((j) => j.topic));
+  const unused = themes.filter((t) => !recentTopics.has(t));
+
+  // If all used, pick from full list (cycle resets)
+  const pool = unused.length > 0 ? unused : themes;
+  return randomChoice(pool);
 }
 
-function getRandomParams() {
+async function getRandomParams() {
   const language: Language = Math.random() > 0.5 ? "HE" : "EN";
 
-  const topic =
-    language === "HE"
-      ? randomChoice(HEBREW_THEMES)
-      : randomChoice(ENGLISH_THEMES);
+  const topic = await pickFreshTheme(language);
 
   const acquisitionMode: AcquisitionMode =
     Math.random() > 0.4 ? "found" : "ai_generated";
@@ -108,7 +130,7 @@ async function handleCron(request: NextRequest) {
     const poemsToGenerate = 1;
 
     for (let i = 0; i < poemsToGenerate; i++) {
-      const params = getRandomParams();
+      const params = await getRandomParams();
 
       // Create AnalysisJob record
       const analysisJob = await db.analysisJob.create({

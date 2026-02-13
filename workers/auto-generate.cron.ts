@@ -66,19 +66,35 @@ function randomChoice<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function randomInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+/**
+ * Pick a theme that hasn't been used recently.
+ * Rotates through all themes before repeating.
+ */
+async function pickFreshTheme(language: Language): Promise<string> {
+  const themes = language === "HE" ? HEBREW_THEMES : ENGLISH_THEMES;
+
+  const recentJobs = await db.analysisJob.findMany({
+    where: {
+      topic: { not: null },
+      status: { not: "FAILED" },
+    },
+    orderBy: { createdAt: "desc" },
+    take: themes.length,
+    select: { topic: true },
+  });
+
+  const recentTopics = new Set(recentJobs.map((j) => j.topic));
+  const unused = themes.filter((t) => !recentTopics.has(t));
+  const pool = unused.length > 0 ? unused : themes;
+  return randomChoice(pool);
 }
 
-function getRandomParams() {
+async function getRandomParams() {
   // 50/50 Hebrew/English
   const language: Language = Math.random() > 0.5 ? "HE" : "EN";
 
-  // Pick theme based on language
-  const topic =
-    language === "HE"
-      ? randomChoice(HEBREW_THEMES)
-      : randomChoice(ENGLISH_THEMES);
+  // Pick fresh theme (avoids recently used ones)
+  const topic = await pickFreshTheme(language);
 
   // Weighted acquisition mode: 60% found, 40% AI-generated
   const acquisitionMode: AcquisitionMode =
@@ -135,7 +151,7 @@ async function main() {
     );
 
     for (let i = 0; i < poemsToGenerate; i++) {
-      const params = getRandomParams();
+      const params = await getRandomParams();
 
       console.log(
         `[Shira Auto-Generate] Poem ${i + 1}: ${params.language} | ${params.acquisitionMode} | "${params.topic}" | ${params.artStyle}`
