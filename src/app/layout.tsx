@@ -28,8 +28,21 @@ const frankRuhl = Frank_Ruhl_Libre({
 });
 
 export const metadata: Metadata = {
-  title: SITE_CONFIG.name,
+  title: {
+    default: SITE_CONFIG.name,
+    template: `%s — ${SITE_CONFIG.name}`,
+  },
   description: SITE_CONFIG.description,
+  metadataBase: new URL(SITE_CONFIG.url),
+  openGraph: {
+    type: "website",
+    siteName: SITE_CONFIG.name,
+    title: SITE_CONFIG.name,
+    description: SITE_CONFIG.description,
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({

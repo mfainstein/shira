@@ -1,12 +1,78 @@
+import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import db from "@/lib/db";
+import { SITE_CONFIG } from "@/config/site";
 import { PoemDisplay } from "@/components/poem/PoemDisplay";
 import { PoemArt } from "@/components/poem/PoemArt";
 import { AnalysisTabs } from "@/components/analysis/AnalysisTabs";
 import { ComparisonView } from "@/components/analysis/ComparisonView";
+import { ShareButton } from "@/components/ui/ShareButton";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+
+  const feature = await db.poemFeature.findUnique({
+    where: { slug },
+    include: {
+      poem: {
+        select: {
+          title: true,
+          titleHe: true,
+          author: true,
+          authorHe: true,
+          content: true,
+          contentHe: true,
+          language: true,
+        },
+      },
+    },
+  });
+
+  if (!feature || feature.status !== "PUBLISHED") {
+    return { title: "Poem not found" };
+  }
+
+  const { poem } = feature;
+  const displayTitle = poem.language === "HE" && poem.titleHe ? poem.titleHe : poem.title;
+  const displayAuthor = poem.language === "HE" && poem.authorHe ? poem.authorHe : poem.author;
+  const displayContent = poem.language === "HE" && poem.contentHe ? poem.contentHe : poem.content;
+
+  // First 2 lines as description
+  const lines = displayContent.split("\n").filter(Boolean);
+  const description = lines.slice(0, 2).join(" / ") + (lines.length > 2 ? " ..." : "");
+
+  const url = `${SITE_CONFIG.url}/poems/${slug}`;
+  const imageUrl = `${SITE_CONFIG.url}/api/public/poems/${slug}/art`;
+
+  return {
+    title: `${displayTitle} — ${displayAuthor}`,
+    description,
+    openGraph: {
+      type: "article",
+      title: `${displayTitle} — ${displayAuthor}`,
+      description,
+      url,
+      siteName: SITE_CONFIG.name,
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 800,
+          alt: `Artwork for ${poem.title}`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${displayTitle} — ${displayAuthor}`,
+      description,
+      images: [imageUrl],
+    },
+  };
 }
 
 export default async function PoemPage({ params }: PageProps) {
@@ -55,14 +121,18 @@ export default async function PoemPage({ params }: PageProps) {
 
   return (
     <main className="min-h-screen">
-      {/* Back link */}
-      <nav className="max-w-4xl mx-auto px-4 pt-8">
+      {/* Nav bar */}
+      <nav className="max-w-4xl mx-auto px-4 pt-8 flex items-center justify-between">
         <a
           href="/"
           className="text-sm text-charcoal-light hover:text-sepia transition-colors font-[family-name:var(--font-ui)]"
         >
           &larr; Back to all poems
         </a>
+        <ShareButton
+          title={`${poem.title} — ${poem.author}`}
+          url={`${SITE_CONFIG.url}/poems/${slug}`}
+        />
       </nav>
 
       {/* 1. Artwork */}
