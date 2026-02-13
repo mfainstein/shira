@@ -32,7 +32,7 @@ export async function generatePoemAudio(
   // Run TTS and music generation in parallel
   const [voiceData, musicData] = await Promise.all([
     generateVoiceover(voiceoverText, voice.id, POETRY_VOICE_SETTINGS, language),
-    generateBackgroundMusic(musicPrompt, estimatedDuration),
+    generateBackgroundMusic(musicPrompt, Math.min(estimatedDuration, 30)),
   ]);
 
   // Mix voice + music

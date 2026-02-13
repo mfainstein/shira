@@ -24,10 +24,11 @@ export async function mixAudio(
       ffmpeg()
         .input(voicePath)
         .input(musicPath)
+        .inputOptions(["-stream_loop", "-1"]) // loop music to cover full voice duration
         .complexFilter([
           // Lower music volume to ~20% of voice level
           "[1:a]volume=0.20[music]",
-          // Mix voice (full volume) with quiet music
+          // Mix voice (full volume) with quiet music; duration=first trims to voice length
           "[0:a][music]amix=inputs=2:duration=first:dropout_transition=3[out]",
         ])
         .outputOptions(["-map", "[out]"])
