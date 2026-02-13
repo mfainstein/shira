@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { getAllAdapters, LLMResponse } from "@/lib/llm";
-import { safeJsonParse } from "../utils";
+import { extractJsonObject } from "../utils";
 
 interface AnalyzeResult {
   completed: number;
@@ -83,16 +83,27 @@ export async function analyzePoem(
         maxTokens: 4096,
       });
 
-      const durationMs = Date.now() - startTime;
-
-      // Parse the JSON response
-      const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error(`${model}: Invalid JSON response`);
-      }
+      let durationMs = Date.now() - startTime;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const analysis = safeJsonParse<any>(jsonMatch[0]);
+      let analysis = extractJsonObject<any>(response.content);
+
+      // Retry once with a simpler prompt if JSON extraction failed
+      if (!analysis) {
+        console.warn(`[Analyze] ${model}: first attempt returned invalid JSON, retrying`);
+        const retry: LLMResponse = await adapter.generate(
+          prompt + "\n\nIMPORTANT: You MUST respond with ONLY a raw JSON object. No markdown, no code fences, no explanation. Just the JSON.",
+          { temperature: 0.3, maxTokens: 4096 }
+        );
+        response.tokensUsed.total += retry.tokensUsed.total;
+        response.cost += retry.cost;
+        durationMs = Date.now() - startTime;
+        analysis = extractJsonObject<any>(retry.content);
+      }
+
+      if (!analysis) {
+        throw new Error(`${model}: Invalid JSON response after retry`);
+      }
 
       await db.poemAnalysis.create({
         data: {

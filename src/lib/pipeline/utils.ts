@@ -19,3 +19,26 @@ export function safeJsonParse<T = unknown>(jsonString: string): T {
     return JSON.parse(sanitized);
   }
 }
+
+/**
+ * Extract a JSON object from an LLM response string.
+ *
+ * Handles common LLM quirks:
+ * - Markdown code fences (```json ... ```)
+ * - Preamble text before JSON
+ * - Invalid escape sequences (via safeJsonParse)
+ */
+export function extractJsonObject<T = unknown>(content: string): T | null {
+  // Strip markdown code fences
+  const stripped = content.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "");
+
+  // Try to find a JSON object
+  const match = stripped.match(/\{[\s\S]*\}/);
+  if (!match) return null;
+
+  try {
+    return safeJsonParse<T>(match[0]);
+  } catch {
+    return null;
+  }
+}

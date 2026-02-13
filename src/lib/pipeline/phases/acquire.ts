@@ -6,7 +6,7 @@ import {
   poetryDBToContent,
   guessThemes,
 } from "../poetrydb";
-import { safeJsonParse } from "../utils";
+import { extractJsonObject } from "../utils";
 
 interface AcquireResult {
   poemId: string;
@@ -150,10 +150,9 @@ Respond in JSON format:
   );
 
   try {
-    const jsonMatch = extractionResponse.content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const extracted = safeJsonParse<any>(jsonMatch[0]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const extracted = extractJsonObject<any>(extractionResponse.content);
+    if (extracted) {
 
       // Check for duplicate
       const dupeKey = `${(extracted.title || "").toLowerCase()}::${(extracted.author || "").toLowerCase()}`;
@@ -244,13 +243,11 @@ Respond in JSON format:
     { temperature: 0.9, maxTokens: 3000 }
   );
 
-  const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const generated = extractJsonObject<any>(response.content);
+  if (!generated) {
     throw new Error("Failed to generate poem - invalid response format");
   }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const generated = safeJsonParse<any>(jsonMatch[0]);
   const modelEnum =
     modelId.includes("claude") ? "CLAUDE" : modelId.includes("gpt") ? "GPT" : "GEMINI";
 
