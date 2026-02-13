@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 const FALLBACKS = [
-  "Three minds walk into a poem—\neach sees a different door.\nOne finds a garden, one a war,\nthe third just asks for more.",
-  "We fed the verse to three machines\nand asked them what they saw.\nOne wept, one laughed, one cited Keats—\nnone mentioned a flaw.",
+  "The ink dries slowly on the page,\nbut the poem keeps moving—\nthrough someone else's throat,\nsomeone else's century,\nsomeone else's grief made beautiful.",
+  "We fed the verse to machines\nand asked them what they saw.\nOne wept, one laughed, one cited Keats—\nnone mentioned a flaw.",
   "A poem sits on the page and waits\nlike a cat on a windowsill,\nknowing you'll come eventually,\nknowing you always will.",
   "Between the lines lives everything\nthe poet was afraid to say.\nThe words are just the furniture—\nthe silence is the play.",
   "The algorithm reads the sonnet twice,\nthen clears its throat to speak.\nIt has opinions on the meter\nand feelings about technique.",

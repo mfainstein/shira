@@ -6,7 +6,7 @@ export default function HomePage() {
     <main className="min-h-screen">
       {/* Header */}
       <header className="text-center py-16 px-4">
-        <h1 className="text-5xl md:text-6xl poem-title mb-6">shir.ai</h1>
+        <h1 className="text-5xl md:text-6xl poem-title mb-6 ink-title">shira</h1>
         <TypewriterTagline />
       </header>
 
@@ -17,7 +17,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-border py-8 text-center text-sm text-charcoal-light/50">
-        <p>shir.ai</p>
+        <p>shira.ink</p>
       </footer>
     </main>
   );

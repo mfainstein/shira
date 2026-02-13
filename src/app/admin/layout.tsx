@@ -26,7 +26,7 @@ export default function AdminLayout({
       <aside className="w-56 bg-white border-r border-border flex flex-col">
         <div className="p-6 border-b border-border">
           <Link href="/" className="text-xl poem-title">
-            shir.ai
+            shira
           </Link>
           <p className="text-xs text-charcoal-light mt-1">Admin</p>
         </div>

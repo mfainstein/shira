@@ -1,8 +1,6 @@
 export const SITE_CONFIG = {
-  name: "shir.ai",
-  nameHe: "שיר.ai",
-  tagline: "Three Minds, One Poem",
-  taglineHe: "שלושה מוחות, שיר אחד",
+  name: "shira",
+  nameHe: "שירה",
   description:
-    "A poetry analysis platform where three AI models independently analyze poems, offering unique perspectives on literature.",
+    "A poetry analysis platform where AI models independently analyze poems, offering unique perspectives on literature.",
 };

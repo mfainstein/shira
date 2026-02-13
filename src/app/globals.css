@@ -7,6 +7,8 @@
   --color-charcoal-light: #4a4a4a;
   --color-sepia: #8b5e3c;
   --color-sepia-light: #a67c5b;
+  --color-ink: #1a1a2e;
+  --color-ink-light: #2d2d44;
   --color-claude: #d97706;
   --color-gpt: #059669;
   --color-gemini: #7c3aed;
@@ -133,6 +135,21 @@ body {
 .prose-poem h2,
 .prose-poem h3 {
   font-family: var(--font-heading);
+}
+
+/* Ink-themed title */
+.ink-title {
+  color: var(--color-ink);
+  text-shadow: 0 1px 2px rgba(26, 26, 46, 0.1);
+  position: relative;
+}
+
+/* Ink dot after title — like a pen rest */
+.ink-title::after {
+  content: "·";
+  color: var(--color-ink);
+  opacity: 0.3;
+  margin-left: 0.1em;
 }
 
 /* Badge styles */

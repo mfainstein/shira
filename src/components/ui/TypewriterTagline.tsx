@@ -21,7 +21,7 @@ export function TypewriterTagline() {
         }
       })
       .catch(() => {
-        setFullText("Three minds walk into a poem—\neach sees a different door.");
+        setFullText("A poem sits on the page and waits,\nknowing you'll come eventually.");
         setIsTyping(true);
       });
   }, []);
@@ -46,7 +46,7 @@ export function TypewriterTagline() {
   if (!fullText) {
     return (
       <div className="h-16 flex items-center justify-center">
-        <span className="inline-block w-[2px] h-5 bg-sepia/40 animate-pulse" />
+        <span className="inline-block w-[2px] h-5 bg-[var(--color-ink)]/30 animate-pulse" />
       </div>
     );
   }
@@ -55,7 +55,7 @@ export function TypewriterTagline() {
     <p className="font-[family-name:var(--font-body)] text-charcoal-light/70 text-base italic leading-relaxed whitespace-pre-line min-h-[3em]">
       {text}
       {isTyping && (
-        <span className="inline-block w-[2px] h-[1em] bg-sepia/60 ml-0.5 animate-pulse align-text-bottom" />
+        <span className="inline-block w-[2px] h-[1em] bg-[var(--color-ink)]/40 ml-0.5 animate-pulse align-text-bottom" />
       )}
     </p>
   );
