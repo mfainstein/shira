@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { getAllAdapters, LLMResponse } from "@/lib/llm";
+import { safeJsonParse } from "../utils";
 
 interface AnalyzeResult {
   completed: number;
@@ -90,7 +91,8 @@ export async function analyzePoem(
         throw new Error(`${model}: Invalid JSON response`);
       }
 
-      const analysis = JSON.parse(jsonMatch[0]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const analysis = safeJsonParse<any>(jsonMatch[0]);
 
       await db.poemAnalysis.create({
         data: {

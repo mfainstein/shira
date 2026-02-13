@@ -6,6 +6,7 @@ import {
   poetryDBToContent,
   guessThemes,
 } from "../poetrydb";
+import { safeJsonParse } from "../utils";
 
 interface AcquireResult {
   poemId: string;
@@ -129,7 +130,8 @@ Respond in JSON format:
   try {
     const jsonMatch = extractionResponse.content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      const extracted = JSON.parse(jsonMatch[0]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const extracted = safeJsonParse<any>(jsonMatch[0]);
 
       const poem = await db.poem.create({
         data: {
@@ -207,7 +209,8 @@ Respond in JSON format:
     throw new Error("Failed to generate poem - invalid response format");
   }
 
-  const generated = JSON.parse(jsonMatch[0]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const generated = safeJsonParse<any>(jsonMatch[0]);
   const modelEnum =
     modelId.includes("claude") ? "CLAUDE" : modelId.includes("gpt") ? "GPT" : "GEMINI";
 

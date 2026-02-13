@@ -1,5 +1,6 @@
 import { PrismaClient, PoemAnalysis } from "@prisma/client";
 import { claude } from "@/lib/llm";
+import { safeJsonParse } from "../utils";
 
 interface CompareResult {
   comparisonId: string;
@@ -71,7 +72,8 @@ Respond ONLY with valid JSON.`;
     throw new Error("Failed to parse comparison response");
   }
 
-  const comparison = JSON.parse(jsonMatch[0]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const comparison = safeJsonParse<any>(jsonMatch[0]);
 
   const created = await db.poemComparison.create({
     data: {

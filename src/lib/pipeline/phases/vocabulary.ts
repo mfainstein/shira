@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { getLLMAdapter } from "@/lib/llm";
+import { safeJsonParse } from "../utils";
 
 interface VocabularyEntry {
   word: string;
@@ -41,7 +42,7 @@ Respond ONLY with the JSON array, no other text:
   try {
     const jsonMatch = response.content.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
-      const entries = JSON.parse(jsonMatch[0]) as VocabularyEntry[];
+      const entries = safeJsonParse<VocabularyEntry[]>(jsonMatch[0]);
 
       // Store as a map: word -> definition
       const vocabMap: Record<string, string> = {};
