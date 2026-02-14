@@ -222,3 +222,13 @@ body::after {
   background: #fce7f3;
   color: #9d174d;
 }
+
+/* Audio player — soft glow pulse on play button (one cycle) */
+@keyframes audio-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 94, 60, 0); }
+  50% { box-shadow: 0 0 8px 3px rgba(139, 94, 60, 0.15); }
+}
+
+.audio-btn {
+  animation: audio-glow 2s ease-in-out 1s 1;
+}

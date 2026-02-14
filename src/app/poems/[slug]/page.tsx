@@ -139,7 +139,14 @@ export default async function PoemPage({ params }: PageProps) {
         </section>
       )}
 
-      {/* 2. Poem text */}
+      {/* 2. Audio player (above poem) */}
+      {hasAudio && (
+        <section className="max-w-4xl mx-auto px-4 pt-6">
+          <AudioPlayer slug={slug} />
+        </section>
+      )}
+
+      {/* 3. Poem text */}
       <section className="max-w-4xl mx-auto px-4 py-12">
         <PoemDisplay
           title={poem.title}
@@ -153,14 +160,7 @@ export default async function PoemPage({ params }: PageProps) {
         />
       </section>
 
-      {/* 2b. Audio player */}
-      {hasAudio && (
-        <section className="max-w-4xl mx-auto px-4 pb-8">
-          <AudioPlayer slug={slug} />
-        </section>
-      )}
-
-      {/* 3. Ornamental divider */}
+      {/* 4. Ornamental divider */}
       <div className="max-w-4xl mx-auto px-4">
         <div className="divider-ornament">&#10045;</div>
       </div>
