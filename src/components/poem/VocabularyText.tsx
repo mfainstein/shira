@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { normalizeWord } from "@/lib/vocabulary-utils";
 
 interface VocabularyTextProps {
@@ -12,6 +12,7 @@ interface VocabularyTextProps {
 export function VocabularyText({ text, vocabulary, isHebrew }: VocabularyTextProps) {
   const [activeWord, setActiveWord] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const activeElRef = useRef<HTMLElement | null>(null);
 
   const handleWordClick = useCallback(
     (word: string, event: React.MouseEvent) => {
@@ -20,9 +21,12 @@ export function VocabularyText({ text, vocabulary, isHebrew }: VocabularyTextPro
         if (activeWord === key) {
           setActiveWord(null);
           setTooltipPos(null);
+          activeElRef.current = null;
         } else {
           setActiveWord(key);
-          const rect = (event.target as HTMLElement).getBoundingClientRect();
+          const el = event.target as HTMLElement;
+          activeElRef.current = el;
+          const rect = el.getBoundingClientRect();
           setTooltipPos({
             x: rect.left + rect.width / 2,
             y: rect.top,
@@ -36,7 +40,23 @@ export function VocabularyText({ text, vocabulary, isHebrew }: VocabularyTextPro
   const dismiss = useCallback(() => {
     setActiveWord(null);
     setTooltipPos(null);
+    activeElRef.current = null;
   }, []);
+
+  // Reposition tooltip on scroll so it stays anchored to the word
+  useEffect(() => {
+    if (!activeWord || !activeElRef.current) return;
+
+    const update = () => {
+      const el = activeElRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setTooltipPos({ x: rect.left + rect.width / 2, y: rect.top });
+    };
+
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, [activeWord]);
 
   const lines = text.split("\n");
   let firstLineRendered = false;
