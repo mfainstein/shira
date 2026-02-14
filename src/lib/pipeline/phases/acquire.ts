@@ -8,6 +8,22 @@ import {
 } from "../poetrydb";
 import { extractJsonObject } from "../utils";
 
+function normalizeForDedup(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/['']/g, "'")
+    .replace(/[^a-z0-9\u0590-\u05ff ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function contentFingerprint(content: string): string {
+  // First 60 words, normalized — catches same poem under different titles
+  return normalizeForDedup(
+    content.split(/\s+/).slice(0, 60).join(" ")
+  );
+}
+
 interface AcquireResult {
   poemId: string;
   title: string;
@@ -59,22 +75,29 @@ async function acquireFoundPoem(
     ? params.topic.split(",").map((t) => t.trim())
     : ["beauty", "nature"];
 
-  // Gather titles we already have, to avoid duplicates
+  // Gather titles + content fingerprints to avoid duplicates
   const existingPoems = await db.poem.findMany({
-    select: { title: true, author: true },
+    select: { title: true, author: true, content: true },
     take: 200,
   });
   const existingTitles = new Set(
-    existingPoems.map((p) => `${p.title.toLowerCase()}::${p.author.toLowerCase()}`)
+    existingPoems.map((p) => `${normalizeForDedup(p.title)}::${normalizeForDedup(p.author)}`)
+  );
+  const existingContent = new Set(
+    existingPoems.map((p) => contentFingerprint(p.content))
   );
 
   if (params.language === "EN") {
     // Try PoetryDB first
-    const poetryDBPoem = await findPoemForThemes(themes);
+    const poetryDBPoem = await findPoemForThemes(themes, (p) => {
+      const key = `${normalizeForDedup(p.title)}::${normalizeForDedup(p.author)}`;
+      return !existingTitles.has(key);
+    });
     if (poetryDBPoem) {
-      const dupeKey = `${poetryDBPoem.title.toLowerCase()}::${poetryDBPoem.author.toLowerCase()}`;
-      if (!existingTitles.has(dupeKey)) {
-        const content = poetryDBToContent(poetryDBPoem);
+      const dupeKey = `${normalizeForDedup(poetryDBPoem.title)}::${normalizeForDedup(poetryDBPoem.author)}`;
+      const content = poetryDBToContent(poetryDBPoem);
+      const contentFp = contentFingerprint(content);
+      if (!existingTitles.has(dupeKey) && !existingContent.has(contentFp)) {
         const poemThemes = guessThemes(poetryDBPoem);
 
         const poem = await db.poem.create({
@@ -154,9 +177,11 @@ Respond in JSON format:
     const extracted = extractJsonObject<any>(extractionResponse.content);
     if (extracted) {
 
-      // Check for duplicate
-      const dupeKey = `${(extracted.title || "").toLowerCase()}::${(extracted.author || "").toLowerCase()}`;
-      if (existingTitles.has(dupeKey)) {
+      // Check for duplicate (title+author or content fingerprint)
+      const dupeKey = `${normalizeForDedup(extracted.title || "")}::${normalizeForDedup(extracted.author || "")}`;
+      const extractedContent = extracted.content || "";
+      const contentFp = contentFingerprint(extractedContent);
+      if (existingTitles.has(dupeKey) || existingContent.has(contentFp)) {
         console.log(`[Acquire] Skipping duplicate found poem: ${extracted.title} by ${extracted.author}`);
         // Fall through to AI generation
       } else {

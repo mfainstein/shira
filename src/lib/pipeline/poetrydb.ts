@@ -63,7 +63,8 @@ export async function getRandomPoems(count = 5): Promise<PoetryDBPoem[]> {
 }
 
 export async function findPoemForThemes(
-  themes: string[]
+  themes: string[],
+  filter?: (poem: PoetryDBPoem) => boolean
 ): Promise<PoetryDBPoem | null> {
   console.log(
     `[PoetryDB] Searching for poem matching themes: ${themes.join(", ")}`
@@ -84,10 +85,11 @@ export async function findPoemForThemes(
       );
 
       if (quality.length > 0) {
-        const suitable = quality.filter((p) => {
+        let suitable = quality.filter((p) => {
           const lc = parseInt(p.linecount, 10);
           return lc >= 4 && lc <= 80;
         });
+        if (filter) suitable = suitable.filter(filter);
         if (suitable.length > 0) {
           const pick = suitable[Math.floor(Math.random() * suitable.length)];
           console.log(
@@ -105,10 +107,11 @@ export async function findPoemForThemes(
   );
   for (const author of shuffledAuthors.slice(0, 3)) {
     const poems = await searchByAuthor(author, 5);
-    const suitable = poems.filter((p) => {
+    let suitable = poems.filter((p) => {
       const lc = parseInt(p.linecount, 10);
       return lc >= 4 && lc <= 80;
     });
+    if (filter) suitable = suitable.filter(filter);
     if (suitable.length > 0) {
       const pick = suitable[Math.floor(Math.random() * suitable.length)];
       console.log(
@@ -120,12 +123,13 @@ export async function findPoemForThemes(
 
   // Last resort: random
   const random = await getRandomPoems(5);
-  const suitable = random.filter((p) => {
+  let suitable2 = random.filter((p) => {
     const lc = parseInt(p.linecount, 10);
     return lc >= 4 && lc <= 80;
   });
-  if (suitable.length > 0) {
-    return suitable[Math.floor(Math.random() * suitable.length)];
+  if (filter) suitable2 = suitable2.filter(filter);
+  if (suitable2.length > 0) {
+    return suitable2[Math.floor(Math.random() * suitable2.length)];
   }
 
   return null;
