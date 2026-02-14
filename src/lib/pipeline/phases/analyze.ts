@@ -44,24 +44,12 @@ Provide your analysis in the following JSON format:
   "literaryAnalysis": "Analysis of literary devices, structure, form, meter, rhyme scheme, enjambment, imagery, metaphor, simile, personification, etc.",
   "thematicAnalysis": "Analysis of the poem's themes, central ideas, philosophical underpinnings, and how they develop through the poem.",
   "emotionalAnalysis": "Analysis of the emotional arc, tone shifts, mood, and the reader's emotional journey through the poem.",
-  "culturalAnalysis": "Analysis of cultural context, historical period, literary movement, intertextual references, and the poem's place in literary tradition.",
-  "moodTimeline": [
-    { "position": 0.0, "valence": -0.3, "arousal": 0.4, "mood": "melancholy", "label": "Opening reflection" },
-    { "position": 0.5, "valence": 0.2, "arousal": 0.6, "mood": "hopeful", "label": "Shift toward light" }
-  ]${
+  "culturalAnalysis": "Analysis of cultural context, historical period, literary movement, intertextual references, and the poem's place in literary tradition."${
     language === "HE"
       ? ',\n  "hebrewAnalysis": "Dedicated analysis of Hebrew-specific poetic devices: biblical parallelism, root-play, chiasmus, acrostic patterns, allusions to sacred texts, and unique features of Hebrew prosody."'
       : ""
   }
 }
-
-moodTimeline rules:
-- Return 5-8 points tracing the poem's emotional arc from start to end.
-- "position" (0–1): progression through the poem (0 = opening, 1 = final line).
-- "valence" (-1 to +1): emotional tone (negative = dark/sad, positive = bright/joyful).
-- "arousal" (0–1): emotional intensity (0 = calm, 1 = intense).
-- "mood": one evocative word capturing the feeling at that point.
-- "label": 3-5 word description of what's happening emotionally.
 
 Respond ONLY with valid JSON.`;
 }

@@ -8,7 +8,6 @@ import { AnalysisTabs } from "@/components/analysis/AnalysisTabs";
 import { ComparisonView } from "@/components/analysis/ComparisonView";
 import { ShareButton } from "@/components/ui/ShareButton";
 import { AudioPlayer } from "@/components/poem/AudioPlayer";
-import { MoodTimeline } from "@/components/analysis/MoodTimeline";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -85,7 +84,6 @@ export default async function PoemPage({ params }: PageProps) {
               emotionalAnalysis: true,
               culturalAnalysis: true,
               hebrewAnalysis: true,
-              rawResponse: true,
             },
           },
           art: {
@@ -167,14 +165,7 @@ export default async function PoemPage({ params }: PageProps) {
         <div className="divider-ornament">&#10045;</div>
       </div>
 
-      {/* 4a. Mood timeline */}
-      {poem.analyses.length > 0 && (
-        <section className="max-w-4xl mx-auto px-4 pt-8 pb-4">
-          <MoodTimeline analyses={poem.analyses} />
-        </section>
-      )}
-
-      {/* 4b. Analysis tabs */}
+      {/* 4. Analysis tabs */}
       {poem.analyses.length > 0 && (
         <section className="max-w-4xl mx-auto px-4 py-12">
           <AnalysisTabs

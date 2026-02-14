@@ -232,12 +232,3 @@ body::after {
 .audio-btn {
   animation: audio-glow 2s ease-in-out 1s 1;
 }
-
-/* Mood timeline — interactive SVG elements */
-.mood-point-target {
-  cursor: pointer;
-}
-
-.mood-curve {
-  cursor: pointer;
-}
