@@ -133,11 +133,11 @@ export function AudioPlayer({ slug }: AudioPlayerProps) {
         {/* Skip back — only when expanded */}
         {expanded && (
           <button
-            onClick={() => skip(-15)}
+            onClick={() => skip(-3)}
             className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-charcoal-light/40 hover:text-sepia transition-colors"
-            aria-label="Back 15 seconds"
+            aria-label="Back 3 seconds"
           >
-            <Skip15BackIcon />
+            <Skip3BackIcon />
           </button>
         )}
 
@@ -153,11 +153,11 @@ export function AudioPlayer({ slug }: AudioPlayerProps) {
         {/* Skip forward — only when expanded */}
         {expanded && (
           <button
-            onClick={() => skip(15)}
+            onClick={() => skip(3)}
             className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-charcoal-light/40 hover:text-sepia transition-colors"
-            aria-label="Forward 15 seconds"
+            aria-label="Forward 3 seconds"
           >
-            <Skip15ForwardIcon />
+            <Skip3ForwardIcon />
           </button>
         )}
 
@@ -220,22 +220,22 @@ function PauseIcon() {
   );
 }
 
-function Skip15BackIcon() {
+function Skip3BackIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 3a9 9 0 1 1-9 9" />
       <polyline points="3 5 3 12 7 12" />
-      <text x="8" y="14.5" fontSize="7" fill="currentColor" stroke="none" fontFamily="sans-serif" fontWeight="600">15</text>
+      <text x="9.5" y="14.5" fontSize="7" fill="currentColor" stroke="none" fontFamily="sans-serif" fontWeight="600">3</text>
     </svg>
   );
 }
 
-function Skip15ForwardIcon() {
+function Skip3ForwardIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 3a9 9 0 1 0 9 9" />
       <polyline points="21 5 21 12 17 12" />
-      <text x="8" y="14.5" fontSize="7" fill="currentColor" stroke="none" fontFamily="sans-serif" fontWeight="600">15</text>
+      <text x="9.5" y="14.5" fontSize="7" fill="currentColor" stroke="none" fontFamily="sans-serif" fontWeight="600">3</text>
     </svg>
   );
 }
