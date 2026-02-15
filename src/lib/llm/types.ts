@@ -19,6 +19,7 @@ export interface LLMOptions {
   temperature?: number;
   maxTokens?: number;
   systemPrompt?: string;
+  jsonMode?: boolean;
 }
 
 export interface LLMAdapter {

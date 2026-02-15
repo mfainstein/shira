@@ -29,11 +29,12 @@ export async function generateVoiceover(
 ): Promise<Buffer> {
   const client = getClient();
 
-  const languageCode = language === "HE" ? "he" : "en";
+  const languageCode = language === "HE" ? "heb" : "en";
+  const modelId = language === "HE" ? "eleven_v3" : ELEVENLABS_CONFIG.ttsModel;
 
   const stream = await client.textToSpeech.convert(voiceId, {
     text,
-    modelId: ELEVENLABS_CONFIG.ttsModel,
+    modelId,
     languageCode,
     voiceSettings: {
       stability: settings.stability,

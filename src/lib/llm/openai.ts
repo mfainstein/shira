@@ -53,6 +53,7 @@ export class OpenAIAdapter implements LLMAdapter {
       max_completion_tokens: options?.maxTokens || 4096,
       temperature: options?.temperature ?? 0.7,
       messages: chatMessages,
+      ...(options?.jsonMode && { response_format: { type: "json_object" as const } }),
     });
 
     const content = response.choices[0]?.message?.content || "";

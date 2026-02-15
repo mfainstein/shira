@@ -81,6 +81,7 @@ export async function analyzePoem(
       const response: LLMResponse = await adapter.generate(prompt, {
         temperature: 0.5,
         maxTokens: 4096,
+        jsonMode: true,
       });
 
       let durationMs = Date.now() - startTime;
@@ -93,7 +94,7 @@ export async function analyzePoem(
         console.warn(`[Analyze] ${model}: first attempt returned invalid JSON, retrying`);
         const retry: LLMResponse = await adapter.generate(
           prompt + "\n\nIMPORTANT: You MUST respond with ONLY a raw JSON object. No markdown, no code fences, no explanation. Just the JSON.",
-          { temperature: 0.3, maxTokens: 4096 }
+          { temperature: 0.3, maxTokens: 4096, jsonMode: true }
         );
         response.tokensUsed.total += retry.tokensUsed.total;
         response.cost += retry.cost;
