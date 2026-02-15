@@ -36,6 +36,7 @@ export class GeminiAdapter implements LLMAdapter {
       generationConfig: {
         maxOutputTokens: options?.maxTokens || 4096,
         temperature: options?.temperature ?? 0.7,
+        ...(options?.jsonMode && { responseMimeType: "application/json" }),
       },
     });
 

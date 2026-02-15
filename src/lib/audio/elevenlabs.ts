@@ -30,17 +30,22 @@ export async function generateVoiceover(
   const client = getClient();
 
   const languageCode = language === "HE" ? "heb" : "en";
-  const modelId = language === "HE" ? "eleven_v3" : ELEVENLABS_CONFIG.ttsModel;
+  const isV3 = language === "HE";
+  const modelId = isV3 ? "eleven_v3" : ELEVENLABS_CONFIG.ttsModel;
 
   const stream = await client.textToSpeech.convert(voiceId, {
     text,
     modelId,
     languageCode,
-    voiceSettings: {
-      stability: settings.stability,
-      similarityBoost: settings.similarity_boost,
-      style: settings.style,
-    },
+    // eleven_v3 uses different voice settings (TTD stability: 0.0/0.5/1.0 only)
+    // so we omit voiceSettings and let the API use defaults
+    ...(!isV3 && {
+      voiceSettings: {
+        stability: settings.stability,
+        similarityBoost: settings.similarity_boost,
+        style: settings.style,
+      },
+    }),
   });
 
   return streamToBuffer(stream);
