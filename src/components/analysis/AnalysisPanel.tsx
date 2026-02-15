@@ -32,10 +32,10 @@ export function AnalysisPanel({
   const isHebrew = language === "HE";
 
   const sections = [
+    { key: "cultural", content: culturalAnalysis },
     { key: "literary", content: literaryAnalysis },
     { key: "thematic", content: thematicAnalysis },
     { key: "emotional", content: emotionalAnalysis },
-    { key: "cultural", content: culturalAnalysis },
     ...(hebrewAnalysis
       ? [{ key: "hebrew", content: hebrewAnalysis }]
       : []),
@@ -50,7 +50,7 @@ export function AnalysisPanel({
   return (
     <div className={`border-l-4 ${modelColor[model] || "border-l-sepia"} pl-4 md:pl-6`}>
       {sections.map(({ key, content }) => (
-        <details key={key} className="analysis-section mb-2" open={key === "literary"}>
+        <details key={key} className="analysis-section mb-2" open={key === "cultural"}>
           <summary className="font-[family-name:var(--font-ui)]">
             {sectionLabels[key]}
           </summary>
