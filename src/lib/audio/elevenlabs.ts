@@ -29,17 +29,16 @@ export async function generateVoiceover(
 ): Promise<Buffer> {
   const client = getClient();
 
-  const languageCode = language === "HE" ? "heb" : "en";
   const isV3 = language === "HE";
   const modelId = isV3 ? "eleven_v3" : ELEVENLABS_CONFIG.ttsModel;
 
   const stream = await client.textToSpeech.convert(voiceId, {
     text,
     modelId,
-    languageCode,
-    // eleven_v3 uses different voice settings (TTD stability: 0.0/0.5/1.0 only)
-    // so we omit voiceSettings and let the API use defaults
+    // eleven_v3 auto-detects language and uses different voice settings,
+    // so we only pass languageCode and voiceSettings for v2
     ...(!isV3 && {
+      languageCode: "en",
       voiceSettings: {
         stability: settings.stability,
         similarityBoost: settings.similarity_boost,
