@@ -1,5 +1,6 @@
 import { PoemFeed } from "@/components/poem/PoemFeed";
 import { TypewriterTagline } from "@/components/ui/TypewriterTagline";
+import { NextPoemCountdown } from "@/components/ui/NextPoemCountdown";
 
 export default function HomePage() {
   return (
@@ -12,6 +13,7 @@ export default function HomePage() {
 
       {/* Feed */}
       <section className="max-w-6xl mx-auto px-4 pb-20">
+        <NextPoemCountdown />
         <PoemFeed />
       </section>
 

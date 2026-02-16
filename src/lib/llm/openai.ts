@@ -7,12 +7,12 @@ import {
   calculateCost,
 } from "./types";
 
-const DEFAULT_MODEL = "gpt-5.1";
+const DEFAULT_MODEL = "gpt-4o";
 
 export class OpenAIAdapter implements LLMAdapter {
   private client: OpenAI;
   readonly provider = "openai";
-  readonly modelId = "gpt-5.1";
+  readonly modelId = "gpt-4o";
 
   constructor() {
     this.client = new OpenAI({
@@ -59,7 +59,7 @@ export class OpenAIAdapter implements LLMAdapter {
     const content = response.choices[0]?.message?.content || "";
     const inputTokens = response.usage?.prompt_tokens || 0;
     const outputTokens = response.usage?.completion_tokens || 0;
-    const cost = calculateCost("gpt-5.1", inputTokens, outputTokens);
+    const cost = calculateCost("gpt-4o", inputTokens, outputTokens);
 
     return {
       content,

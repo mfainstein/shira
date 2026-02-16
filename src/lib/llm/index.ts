@@ -12,8 +12,7 @@ export function getLLMAdapter(modelId: string): LLMAdapter {
     case "claude-opus-4-5":
     case "claude-sonnet-4-5":
       return claude;
-    case "gpt-5.1":
-    case "gpt-5":
+    case "gpt-4o":
       return openai;
     case "gemini-3-flash":
     case "gemini-2-flash":
@@ -40,10 +39,10 @@ export const availableModels = [
     description: "Best for nuanced analysis and complex topics",
   },
   {
-    id: "gpt-5.1",
-    name: "GPT-5.1",
+    id: "gpt-4o",
+    name: "GPT-4o",
     provider: "OpenAI",
-    description: "Latest flagship model for coding and complex tasks",
+    description: "Strong multimodal model with reliable structured output",
   },
   {
     id: "gemini-3-flash",

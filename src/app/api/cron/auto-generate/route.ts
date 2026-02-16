@@ -42,7 +42,7 @@ const ENGLISH_THEMES = [
   "art,creation",
 ];
 
-const SOURCE_MODELS = ["claude-opus-4-5", "gpt-5.1", "gemini-3-flash"];
+const SOURCE_MODELS = ["claude-opus-4-5", "gpt-4o", "gemini-3-flash"];
 
 function randomChoice<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];

@@ -33,8 +33,7 @@ export interface LLMAdapter {
 export const MODEL_COSTS = {
   "claude-opus-4-5": { input: 5.0, output: 25.0 },
   "claude-sonnet-4-5": { input: 3.0, output: 15.0 },
-  "gpt-5.1": { input: 2.0, output: 8.0 },
-  "gpt-5": { input: 2.5, output: 10.0 },
+  "gpt-4o": { input: 2.5, output: 10.0 },
   "gemini-3-flash": { input: 0.1, output: 0.4 },
   "gemini-2-flash": { input: 0.075, output: 0.3 },
 } as const;
