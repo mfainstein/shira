@@ -30,7 +30,11 @@ Respond ONLY with the JSON array, no other text:
 }
 
 function extractEntries(content: string): LineExplanationEntry[] | null {
-  const jsonMatch = content.match(/\[[\s\S]*?\]/);
+  // Strip markdown code fences
+  const stripped = content.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "");
+
+  // Greedy match to get the full array (non-greedy stops at first `]` inside objects)
+  const jsonMatch = stripped.match(/\[[\s\S]*\]/);
   if (!jsonMatch) return null;
 
   const entries = safeJsonParse<LineExplanationEntry[]>(jsonMatch[0]);
