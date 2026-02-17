@@ -39,18 +39,21 @@ function formatStanzas(text: string): string[][] {
   return stanzas;
 }
 
-function ExplainIcon({ isOpen, onClick, isHebrew }: { isOpen: boolean; onClick: () => void; isHebrew: boolean }) {
+function ExplainIcon({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }) {
   return (
     <button
-      onClick={onClick}
-      className={`absolute top-1 inline-flex items-center justify-center w-5 h-5 rounded-full transition-colors ${
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className={`inline-flex items-center justify-center w-4 h-4 rounded-full transition-colors align-middle mx-1 ${
         isOpen
           ? "text-sepia"
-          : "text-charcoal-light/30 hover:text-sepia/60"
-      } ${isHebrew ? "left-0 -translate-x-full -ml-1" : "right-0 translate-x-full ml-1"}`}
+          : "text-charcoal-light/25 hover:text-sepia/60"
+      }`}
       aria-label="Explain this line"
     >
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M9 18h6" />
         <path d="M10 22h4" />
         <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14" />
@@ -134,17 +137,16 @@ export function PoemDisplay({
                 const explanation = getExplanation(line);
 
                 return (
-                  <div key={j} className={explanation ? "relative" : ""}>
+                  <div key={j}>
                     <p className={`leading-relaxed ${i === 0 && j === 0 ? "drop-cap" : ""}`}>
                       {line}
+                      {explanation && (
+                        <ExplainIcon
+                          isOpen={openLines.has(line.trim())}
+                          onClick={() => toggleLine(line.trim())}
+                        />
+                      )}
                     </p>
-                    {explanation && (
-                      <ExplainIcon
-                        isOpen={openLines.has(line.trim())}
-                        onClick={() => toggleLine(line.trim())}
-                        isHebrew={isHebrew}
-                      />
-                    )}
                     {explanation && (
                       <LineExplanation
                         explanation={explanation}
