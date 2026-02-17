@@ -3,7 +3,7 @@ import { getLLMAdapter } from "@/lib/llm";
 import { safeJsonParse } from "../utils";
 
 interface LineExplanationEntry {
-  line: string;
+  lineNumber: number;
   explanation: string;
 }
 
@@ -12,28 +12,34 @@ const MODELS = ["gemini-3-flash", "claude-opus-4-5"];
 function buildPrompt(content: string, language: "EN" | "HE"): string {
   const languageInstruction =
     language === "HE"
-      ? "The poem is in Hebrew. Provide explanations in Hebrew. Each explanation should be a plain-language paraphrase of what the line means."
-      : "Provide explanations in English. Each explanation should be a plain-language paraphrase of what the line means.";
+      ? "The poem is in Hebrew. Provide explanations in Hebrew."
+      : "Provide explanations in English.";
 
-  return `For each line of this poem, provide a short (10-15 word) plain-language explanation of what it means in context of the full poem.
+  // Number each non-empty line so the AI can reference by number
+  const numberedLines = content
+    .split("\n")
+    .map((line, i) => (line.trim() ? `${i + 1}: ${line}` : ""))
+    .filter(Boolean)
+    .join("\n");
+
+  return `For each numbered line of this poem, provide a short (10-15 word) plain-language explanation of what it means in context of the full poem.
 
 ${languageInstruction}
 
-Poem:
-${content}
+Poem (with line numbers):
+${numberedLines}
 
-Return a JSON array of objects with "line" (the exact line text) and "explanation" (the plain-language meaning).
-Skip empty lines. Only include lines that contain text.
+Return a JSON array of objects with "lineNumber" (the number) and "explanation" (the plain-language meaning).
 
 Respond ONLY with the JSON array, no other text:
-[{"line": "...", "explanation": "..."}]`;
+[{"lineNumber": 1, "explanation": "..."}]`;
 }
 
 function extractEntries(content: string): LineExplanationEntry[] | null {
   // Strip markdown code fences
   const stripped = content.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "");
 
-  // Greedy match to get the full array (non-greedy stops at first `]` inside objects)
+  // Greedy match to get the full array
   const jsonMatch = stripped.match(/\[[\s\S]*\]/);
   if (!jsonMatch) return null;
 
@@ -41,7 +47,7 @@ function extractEntries(content: string): LineExplanationEntry[] | null {
   if (!Array.isArray(entries) || entries.length === 0) return null;
 
   const valid = entries.filter(
-    (e) => e && typeof e.line === "string" && typeof e.explanation === "string"
+    (e) => e && typeof e.lineNumber === "number" && typeof e.explanation === "string"
   );
   return valid.length > 0 ? valid : null;
 }
@@ -55,6 +61,7 @@ export async function generateLineExplanations(
   }
 ): Promise<{ lines: number; cost: number }> {
   const prompt = buildPrompt(params.content, params.language);
+  const contentLines = params.content.split("\n");
   let totalCost = 0;
 
   for (const modelId of MODELS) {
@@ -68,10 +75,14 @@ export async function generateLineExplanations(
 
       const entries = extractEntries(response.content);
       if (entries) {
+        // Map line numbers back to exact content lines
         const explanationMap: Record<string, string> = {};
         for (const entry of entries) {
-          const key = entry.line.trim();
-          if (key) explanationMap[key] = entry.explanation;
+          const lineIdx = entry.lineNumber - 1; // 1-based to 0-based
+          const actualLine = contentLines[lineIdx]?.trim();
+          if (actualLine) {
+            explanationMap[actualLine] = entry.explanation;
+          }
         }
 
         if (Object.keys(explanationMap).length > 0) {
