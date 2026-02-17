@@ -22,16 +22,24 @@ export function Badge({ variant, children }: BadgeProps) {
   );
 }
 
-export function ModelBadge({ model }: { model: string }) {
+export function ModelBadge({ model, language }: { model: string; language?: string }) {
   const labels: Record<string, string> = {
     CLAUDE: "Claude",
     GPT: "GPT",
     GEMINI: "Gemini",
   };
 
+  const labelsHe: Record<string, string> = {
+    CLAUDE: "קלוד",
+    GPT: "ג׳י פי טי",
+    GEMINI: "ג׳מיני",
+  };
+
+  const names = language === "HE" ? labelsHe : labels;
+
   return (
     <Badge variant={model.toLowerCase() as "claude" | "gpt" | "gemini"}>
-      {labels[model] || model}
+      {names[model] || model}
     </Badge>
   );
 }

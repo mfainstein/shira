@@ -1,6 +1,7 @@
 "use client";
 
 import ReactMarkdown from "react-markdown";
+import { hebrewifyModelNames } from "@/lib/hebrew-utils";
 
 interface AnalysisPanelProps {
   model: string;
@@ -58,7 +59,7 @@ export function AnalysisPanel({
             className="prose prose-sm max-w-none py-4 text-charcoal-light prose-headings:font-[family-name:var(--font-heading)] prose-p:leading-relaxed"
             dir={isHebrew ? "rtl" : "ltr"}
           >
-            <ReactMarkdown>{content}</ReactMarkdown>
+            <ReactMarkdown>{isHebrew ? hebrewifyModelNames(content) : content}</ReactMarkdown>
           </div>
         </details>
       ))}

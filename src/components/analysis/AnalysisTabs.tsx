@@ -25,6 +25,12 @@ const modelNames: Record<string, string> = {
   GEMINI: "Gemini",
 };
 
+const modelNamesHe: Record<string, string> = {
+  CLAUDE: "קלוד",
+  GPT: "ג׳י פי טי",
+  GEMINI: "ג׳מיני",
+};
+
 const modelColors: Record<string, { bg: string; border: string; text: string }> = {
   CLAUDE: { bg: "bg-amber-50", border: "border-amber-300", text: "text-amber-700" },
   GPT: { bg: "bg-emerald-50", border: "border-emerald-300", text: "text-emerald-700" },
@@ -32,6 +38,8 @@ const modelColors: Record<string, { bg: string; border: string; text: string }> 
 };
 
 export function AnalysisTabs({ analyses, language }: AnalysisTabsProps) {
+  const isHebrew = language === "HE";
+  const names = isHebrew ? modelNamesHe : modelNames;
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
 
   const handleReveal = (model: string) => {
@@ -71,9 +79,9 @@ export function AnalysisTabs({ analyses, language }: AnalysisTabsProps) {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <ModelBadge model={analysis.model} />
+                  <ModelBadge model={analysis.model} language={language} />
                   <span className={`font-medium text-sm ${isRevealed ? colors.text : "text-charcoal"}`}>
-                    {modelNames[analysis.model] || analysis.model}
+                    {names[analysis.model] || analysis.model}
                   </span>
                 </div>
                 <span className={`text-xs transition-transform ${isRevealed ? "rotate-180" : ""}`}>

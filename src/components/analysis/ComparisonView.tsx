@@ -3,6 +3,7 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { ModelBadge } from "@/components/ui/Badge";
+import { hebrewifyModelNames } from "@/lib/hebrew-utils";
 
 interface Insight {
   model: string;
@@ -22,7 +23,9 @@ export function ComparisonView({
   agreements,
   disagreements,
   insights,
+  language,
 }: ComparisonViewProps) {
+  const isHebrew = language === "HE";
   const [view, setView] = useState<"structured" | "essay">("structured");
 
   return (
@@ -66,7 +69,7 @@ export function ComparisonView({
                     className="flex gap-3 text-sm text-charcoal-light"
                   >
                     <span className="text-emerald-500 mt-0.5 shrink-0">&#10003;</span>
-                    <span>{point}</span>
+                    <span>{isHebrew ? hebrewifyModelNames(point) : point}</span>
                   </li>
                 ))}
               </ul>
@@ -86,7 +89,7 @@ export function ComparisonView({
                     className="flex gap-3 text-sm text-charcoal-light"
                   >
                     <span className="text-amber-500 mt-0.5 shrink-0">&#9674;</span>
-                    <span>{point}</span>
+                    <span>{isHebrew ? hebrewifyModelNames(point) : point}</span>
                   </li>
                 ))}
               </ul>
@@ -102,9 +105,9 @@ export function ComparisonView({
               <div className="space-y-4">
                 {insights.map((item, i) => (
                   <div key={i} className="flex gap-3 items-start">
-                    <ModelBadge model={item.model} />
+                    <ModelBadge model={item.model} language={language} />
                     <p className="text-sm text-charcoal-light flex-1">
-                      {item.insight}
+                      {isHebrew ? hebrewifyModelNames(item.insight) : item.insight}
                     </p>
                   </div>
                 ))}
@@ -114,7 +117,7 @@ export function ComparisonView({
         </div>
       ) : (
         <div className="prose prose-sm max-w-none prose-headings:font-[family-name:var(--font-heading)] prose-p:text-charcoal-light prose-li:text-charcoal-light">
-          <ReactMarkdown>{comparisonContent}</ReactMarkdown>
+          <ReactMarkdown>{isHebrew ? hebrewifyModelNames(comparisonContent) : comparisonContent}</ReactMarkdown>
         </div>
       )}
     </div>

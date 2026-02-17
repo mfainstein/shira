@@ -174,27 +174,40 @@ export function VocabularyText({
       })}
 
       {/* Tooltip */}
-      {activeWord && tooltipPos && vocabulary[activeWord] && (
-        <div
-          className="fixed z-50 max-w-xs px-4 py-3 bg-charcoal text-white text-sm rounded-lg shadow-lg"
-          style={{
-            left: `${tooltipPos.x}px`,
-            top: `${tooltipPos.y - 8}px`,
-            transform: "translate(-50%, -100%)",
-          }}
-          dir="ltr"
-        >
-          <p className={`font-medium mb-1 ${isHebrew ? "font-[family-name:var(--font-hebrew)]" : ""}`}>
-            {activeWord}
-          </p>
-          <p className="text-white/80 text-xs leading-relaxed">
-            {vocabulary[activeWord]}
-          </p>
+      {activeWord && tooltipPos && vocabulary[activeWord] && (() => {
+        // Clamp horizontal position so tooltip stays on screen
+        const pad = 12;
+        const tooltipWidth = 256; // max-w-xs = 20rem = ~320px, but content is usually smaller
+        const halfWidth = tooltipWidth / 2;
+        const vw = typeof window !== "undefined" ? window.innerWidth : 400;
+        const clampedX = Math.max(halfWidth + pad, Math.min(tooltipPos.x, vw - halfWidth - pad));
+
+        return (
           <div
-            className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-charcoal"
-          />
-        </div>
-      )}
+            className="fixed z-50 max-w-xs px-4 py-3 bg-charcoal text-white text-sm rounded-lg shadow-lg"
+            style={{
+              left: `${clampedX}px`,
+              top: `${tooltipPos.y - 8}px`,
+              transform: "translate(-50%, -100%)",
+            }}
+            dir="ltr"
+          >
+            <p className={`font-medium mb-1 ${isHebrew ? "font-[family-name:var(--font-hebrew)]" : ""}`}>
+              {activeWord}
+            </p>
+            <p className="text-white/80 text-xs leading-relaxed">
+              {vocabulary[activeWord]}
+            </p>
+            <div
+              className="absolute top-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-charcoal"
+              style={{
+                left: `${tooltipPos.x - clampedX + halfWidth}px`,
+                transform: "translateX(-50%)",
+              }}
+            />
+          </div>
+        );
+      })()}
     </div>
   );
 }
