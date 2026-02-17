@@ -43,12 +43,11 @@ function ExplainIcon({ isOpen, onClick, isHebrew }: { isOpen: boolean; onClick: 
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center justify-center w-5 h-5 rounded-full transition-colors flex-shrink-0 ${
+      className={`absolute top-1 inline-flex items-center justify-center w-5 h-5 rounded-full transition-colors ${
         isOpen
           ? "text-sepia"
           : "text-charcoal-light/30 hover:text-sepia/60"
-      }`}
-      style={isHebrew ? { marginRight: "0.375rem" } : { marginLeft: "0.375rem" }}
+      } ${isHebrew ? "left-0 -translate-x-full -ml-1" : "right-0 translate-x-full ml-1"}`}
       aria-label="Explain this line"
     >
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -135,17 +134,17 @@ export function PoemDisplay({
                 const explanation = getExplanation(line);
 
                 return (
-                  <div key={j}>
-                    <p className={`leading-relaxed ${i === 0 && j === 0 ? "drop-cap" : ""} ${explanation ? "inline-flex items-center justify-center" : ""}`}>
-                      <span>{line}</span>
-                      {explanation && (
-                        <ExplainIcon
-                          isOpen={openLines.has(line.trim())}
-                          onClick={() => toggleLine(line.trim())}
-                          isHebrew={isHebrew}
-                        />
-                      )}
+                  <div key={j} className={explanation ? "relative" : ""}>
+                    <p className={`leading-relaxed ${i === 0 && j === 0 ? "drop-cap" : ""}`}>
+                      {line}
                     </p>
+                    {explanation && (
+                      <ExplainIcon
+                        isOpen={openLines.has(line.trim())}
+                        onClick={() => toggleLine(line.trim())}
+                        isHebrew={isHebrew}
+                      />
+                    )}
                     {explanation && (
                       <LineExplanation
                         explanation={explanation}

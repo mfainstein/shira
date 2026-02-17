@@ -20,12 +20,11 @@ function ExplainIcon({ isOpen, onClick, isHebrew }: { isOpen: boolean; onClick: 
         e.stopPropagation();
         onClick();
       }}
-      className={`inline-flex items-center justify-center w-5 h-5 rounded-full transition-colors flex-shrink-0 ${
+      className={`absolute top-1 inline-flex items-center justify-center w-5 h-5 rounded-full transition-colors ${
         isOpen
           ? "text-sepia"
           : "text-charcoal-light/30 hover:text-sepia/60"
-      }`}
-      style={isHebrew ? { marginRight: "0.375rem" } : { marginLeft: "0.375rem" }}
+      } ${isHebrew ? "left-0 -translate-x-full -ml-1" : "right-0 translate-x-full ml-1"}`}
       aria-label="Explain this line"
     >
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -119,49 +118,47 @@ export function VocabularyText({
         const explanation = getExplanation(line);
 
         return (
-          <div key={lineIdx}>
-            <p className={`leading-relaxed ${isFirstLine ? "drop-cap" : ""} ${explanation ? "inline-flex items-center justify-center" : ""}`}>
-              <span>
-                {words.map((segment, wordIdx) => {
-                  if (/^\s+$/.test(segment)) {
-                    return <span key={wordIdx}>{segment}</span>;
-                  }
-
-                  const cleanWord = normalizeWord(segment);
-                  const hasDefinition = !!vocabulary[cleanWord];
-
-                  if (hasDefinition) {
-                    const isActive = activeWord === cleanWord;
-                    return (
-                      <span
-                        key={wordIdx}
-                        data-vocab-word=""
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleWordClick(segment, e);
-                        }}
-                        className={`cursor-pointer transition-colors border-b border-dotted ${
-                          isActive
-                            ? "border-sepia text-sepia"
-                            : "border-charcoal-light/30 hover:border-sepia/50 hover:text-sepia/80"
-                        }`}
-                      >
-                        {segment}
-                      </span>
-                    );
-                  }
-
+          <div key={lineIdx} className={explanation ? "relative" : ""}>
+            <p className={`leading-relaxed ${isFirstLine ? "drop-cap" : ""}`}>
+              {words.map((segment, wordIdx) => {
+                if (/^\s+$/.test(segment)) {
                   return <span key={wordIdx}>{segment}</span>;
-                })}
-              </span>
-              {explanation && onToggleLine && (
-                <ExplainIcon
-                  isOpen={openLines?.has(line.trim()) ?? false}
-                  onClick={() => onToggleLine(line.trim())}
-                  isHebrew={isHebrew}
-                />
-              )}
+                }
+
+                const cleanWord = normalizeWord(segment);
+                const hasDefinition = !!vocabulary[cleanWord];
+
+                if (hasDefinition) {
+                  const isActive = activeWord === cleanWord;
+                  return (
+                    <span
+                      key={wordIdx}
+                      data-vocab-word=""
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleWordClick(segment, e);
+                      }}
+                      className={`cursor-pointer transition-colors border-b border-dotted ${
+                        isActive
+                          ? "border-sepia text-sepia"
+                          : "border-charcoal-light/30 hover:border-sepia/50 hover:text-sepia/80"
+                      }`}
+                    >
+                      {segment}
+                    </span>
+                  );
+                }
+
+                return <span key={wordIdx}>{segment}</span>;
+              })}
             </p>
+            {explanation && onToggleLine && (
+              <ExplainIcon
+                isOpen={openLines?.has(line.trim()) ?? false}
+                onClick={() => onToggleLine(line.trim())}
+                isHebrew={isHebrew}
+              />
+            )}
             {explanation && (
               <LineExplanation
                 explanation={explanation}
