@@ -32,8 +32,11 @@ Respond ONLY with the JSON array, no other text:
 }
 
 function extractVocabEntries(content: string): VocabularyEntry[] | null {
-  // Try matching a JSON array — use non-greedy to avoid grabbing too much
-  const jsonMatch = content.match(/\[[\s\S]*?\]/);
+  // Strip markdown code fences
+  const stripped = content.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "");
+
+  // Greedy match to get the full array
+  const jsonMatch = stripped.match(/\[[\s\S]*\]/);
   if (!jsonMatch) return null;
 
   const entries = safeJsonParse<VocabularyEntry[]>(jsonMatch[0]);
@@ -63,7 +66,8 @@ export async function generateVocabulary(
       const llm = getLLMAdapter(modelId);
       const response = await llm.generate(prompt, {
         temperature: 0.3,
-        maxTokens: 1500,
+        maxTokens: 8192,
+        jsonMode: true,
       });
       totalCost += response.cost;
 

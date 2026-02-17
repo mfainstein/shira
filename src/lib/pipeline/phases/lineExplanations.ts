@@ -69,7 +69,8 @@ export async function generateLineExplanations(
       const llm = getLLMAdapter(modelId);
       const response = await llm.generate(prompt, {
         temperature: 0.3,
-        maxTokens: 2000,
+        maxTokens: 8192,
+        jsonMode: true,
       });
       totalCost += response.cost;
 
