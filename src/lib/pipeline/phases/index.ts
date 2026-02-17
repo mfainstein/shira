@@ -4,3 +4,4 @@ export { generatePoemAudioPhase } from "./audio";
 export { analyzePoem } from "./analyze";
 export { compareAnalyses } from "./compare";
 export { generateVocabulary } from "./vocabulary";
+export { generateLineExplanations } from "./lineExplanations";

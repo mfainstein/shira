@@ -2,14 +2,27 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { normalizeWord } from "@/lib/vocabulary-utils";
+import { LineExplanation } from "./LineExplanation";
 
 interface VocabularyTextProps {
   text: string;
   vocabulary: Record<string, string>;
   isHebrew: boolean;
+  lineExplanations?: Record<string, string> | null;
+  explanationMode?: boolean;
+  openLines?: Set<string>;
+  onToggleLine?: (line: string) => void;
 }
 
-export function VocabularyText({ text, vocabulary, isHebrew }: VocabularyTextProps) {
+export function VocabularyText({
+  text,
+  vocabulary,
+  isHebrew,
+  lineExplanations,
+  explanationMode,
+  openLines,
+  onToggleLine,
+}: VocabularyTextProps) {
   const [activeWord, setActiveWord] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
   const activeElRef = useRef<HTMLElement | null>(null);
@@ -58,6 +71,11 @@ export function VocabularyText({ text, vocabulary, isHebrew }: VocabularyTextPro
     return () => window.removeEventListener("scroll", update);
   }, [activeWord]);
 
+  const getExplanation = (line: string): string | undefined => {
+    if (!lineExplanations) return undefined;
+    return lineExplanations[line] || lineExplanations[line.trim()];
+  };
+
   const lines = text.split("\n");
   let firstLineRendered = false;
 
@@ -76,41 +94,59 @@ export function VocabularyText({ text, vocabulary, isHebrew }: VocabularyTextPro
         if (isFirstLine) firstLineRendered = true;
 
         const words = line.split(/(\s+)/);
+        const explanation = getExplanation(line);
+        const hasLineExplanation = explanationMode && explanation;
 
         return (
-          <p key={lineIdx} className={`leading-relaxed ${isFirstLine ? "drop-cap" : ""}`}>
-            {words.map((segment, wordIdx) => {
-              if (/^\s+$/.test(segment)) {
+          <div key={lineIdx}>
+            <p
+              className={`leading-relaxed ${isFirstLine ? "drop-cap" : ""} ${
+                hasLineExplanation
+                  ? "cursor-pointer border-l-2 border-sepia/20 pl-3 hover:border-sepia/40 transition-colors"
+                  : ""
+              }`}
+              onClick={hasLineExplanation && onToggleLine ? () => onToggleLine(line.trim()) : undefined}
+            >
+              {words.map((segment, wordIdx) => {
+                if (/^\s+$/.test(segment)) {
+                  return <span key={wordIdx}>{segment}</span>;
+                }
+
+                const cleanWord = normalizeWord(segment);
+                const hasDefinition = !!vocabulary[cleanWord];
+
+                if (hasDefinition) {
+                  const isActive = activeWord === cleanWord;
+                  return (
+                    <span
+                      key={wordIdx}
+                      data-vocab-word=""
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleWordClick(segment, e);
+                      }}
+                      className={`cursor-pointer transition-colors border-b border-dotted ${
+                        isActive
+                          ? "border-sepia text-sepia"
+                          : "border-charcoal-light/30 hover:border-sepia/50 hover:text-sepia/80"
+                      }`}
+                    >
+                      {segment}
+                    </span>
+                  );
+                }
+
                 return <span key={wordIdx}>{segment}</span>;
-              }
-
-              const cleanWord = normalizeWord(segment);
-              const hasDefinition = !!vocabulary[cleanWord];
-
-              if (hasDefinition) {
-                const isActive = activeWord === cleanWord;
-                return (
-                  <span
-                    key={wordIdx}
-                    data-vocab-word=""
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleWordClick(segment, e);
-                    }}
-                    className={`cursor-pointer transition-colors border-b border-dotted ${
-                      isActive
-                        ? "border-sepia text-sepia"
-                        : "border-charcoal-light/30 hover:border-sepia/50 hover:text-sepia/80"
-                    }`}
-                  >
-                    {segment}
-                  </span>
-                );
-              }
-
-              return <span key={wordIdx}>{segment}</span>;
-            })}
-          </p>
+              })}
+            </p>
+            {hasLineExplanation && (
+              <LineExplanation
+                explanation={explanation}
+                isOpen={openLines?.has(line.trim()) ?? false}
+                isHebrew={isHebrew}
+              />
+            )}
+          </div>
         );
       })}
 

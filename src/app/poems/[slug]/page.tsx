@@ -157,6 +157,7 @@ export default async function PoemPage({ params }: PageProps) {
           contentHe={poem.contentHe}
           language={poem.language}
           vocabulary={poem.vocabulary as Record<string, string> | null}
+          lineExplanations={poem.lineExplanations as Record<string, string> | null}
         />
       </section>
 
