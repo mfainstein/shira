@@ -159,16 +159,25 @@ async function acquireFoundPoem(
     ? `\n\nIMPORTANT: We already have these poems, so choose a DIFFERENT one: ${existingTitlesList}`
     : "";
 
+  // Collect source URLs for attribution
+  const sourceUrls = research.sources
+    .filter((s) => s.url)
+    .map((s) => s.url);
+
   const extractionResponse = await llm.generate(
-    `Based on this research about poems, extract or identify one complete poem. If the full text is available, include it. If not, provide the poem's title, author, and whatever text is available.
+    `Based on this research about poems, extract or identify one complete poem.
+
+CRITICAL: You MUST use the EXACT text found in the research results. Do NOT paraphrase, rewrite, or fabricate any poem text. If the full text is not available in the research results, set "content" to "" (empty string) and the poem will be skipped.
 
 ${hebrewExtraction}${exclusionNote}
 
+Also provide "sourceUrl": the URL where the poem text was found (from the research sources).
+
 Research results: ${research.answer || "No direct answer"}
-Sources: ${research.sources.map((s) => s.snippet).join("\n")}
+Sources: ${research.sources.map((s) => `[${s.url || ""}] ${s.snippet}`).join("\n")}
 
 Respond in JSON format:
-{"title": "...", "titleHe": "...", "author": "...", "authorHe": "...", "content": "English text...", "contentHe": "Hebrew text...", "themes": ["theme1", "theme2"]}`,
+{"title": "...", "titleHe": "...", "author": "...", "authorHe": "...", "content": "English text...", "contentHe": "Hebrew text...", "themes": ["theme1", "theme2"], "sourceUrl": "..."}`,
     { temperature: 0.3 }
   );
 
@@ -176,15 +185,25 @@ Respond in JSON format:
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const extracted = extractJsonObject<any>(extractionResponse.content);
     if (extracted) {
+      // Skip if the LLM couldn't find the full text in the research
+      const extractedContent = extracted.content || "";
+      const extractedContentHe = extracted.contentHe || "";
+      const hasContent = params.language === "HE"
+        ? extractedContentHe.trim().length > 0
+        : extractedContent.trim().length > 0;
+      if (!hasContent) {
+        console.log(`[Acquire] Skipping poem with empty content (not found in research): ${extracted.title}`);
+        // Fall through to AI generation
+      }
 
       // Check for duplicate (title+author or content fingerprint)
       const dupeKey = `${normalizeForDedup(extracted.title || "")}::${normalizeForDedup(extracted.author || "")}`;
-      const extractedContent = extracted.content || "";
       const contentFp = contentFingerprint(extractedContent);
-      if (existingTitles.has(dupeKey) || existingContent.has(contentFp)) {
+      if (hasContent && (existingTitles.has(dupeKey) || existingContent.has(contentFp))) {
         console.log(`[Acquire] Skipping duplicate found poem: ${extracted.title} by ${extracted.author}`);
         // Fall through to AI generation
-      } else {
+      } else if (hasContent) {
+        const resolvedSourceUrl = extracted.sourceUrl || sourceUrls[0] || null;
         const poem = await db.poem.create({
           data: {
             title: extracted.title,
@@ -195,6 +214,7 @@ Respond in JSON format:
             contentHe: extracted.contentHe || null,
             language: params.language,
             source: "FOUND",
+            sourceUrl: resolvedSourceUrl,
             themes: extracted.themes || themes,
             isPublicDomain: true,
           },
@@ -218,7 +238,7 @@ Respond in JSON format:
   return acquireAIPoem(db, params);
 }
 
-async function acquireAIPoem(
+export async function acquireAIPoem(
   db: PrismaClient,
   params: {
     topic?: string;

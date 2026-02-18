@@ -1,7 +1,7 @@
 import { Job } from "bullmq";
 import { PrismaClient } from "@prisma/client";
 import slugify from "slugify";
-import { acquirePoem, generatePoemArt, generatePoemAudioPhase, analyzePoem, compareAnalyses, generateVocabulary, generateLineExplanations } from "./phases";
+import { acquirePoem, verifyPoem, generatePoemArt, generatePoemAudioPhase, analyzePoem, compareAnalyses, generateVocabulary, generateLineExplanations } from "./phases";
 import { AnalysisJobData, AnalysisJobResult } from "./queue";
 
 export interface AgentConfig {
@@ -44,15 +44,52 @@ export class PoetryAnalysisAgent {
       title: acquired.title,
     });
 
-    // Phase 2: Generate art (10-30%)
-    await this.updateProgress(15, "GENERATING_ART", "Generating artwork");
+    // Phase 1.5: Verify poem (10-15%) — only for "found" poems
+    await this.updateProgress(10, "VERIFYING", "Verifying poem attribution");
+    const poem0 = await db.poem.findUnique({ where: { id: acquired.poemId } });
+    const verified = await verifyPoem(db, {
+      poemId: acquired.poemId,
+      title: acquired.title,
+      titleHe: poem0?.titleHe || undefined,
+      author: poem0?.author || "Unknown",
+      authorHe: poem0?.authorHe || undefined,
+      content: acquired.content,
+      contentHe: poem0?.contentHe || undefined,
+      language: acquired.language,
+      acquisitionMode: params.acquisitionMode,
+    });
+    this.totalCost += verified.cost;
+
+    // If rejected, update the link to the replacement poem
+    if (verified.status === "rejected") {
+      await db.analysisJob.update({
+        where: { id: this.config.analysisJobId },
+        data: { poemId: verified.poemId },
+      });
+    }
+
+    // Use verified data going forward
+    const verifiedPoemId = verified.poemId;
+    const verifiedTitle = verified.title;
+    const verifiedContent = verified.content;
+    const verifiedThemes = verified.themes.length > 0 ? verified.themes : acquired.themes;
+
+    await this.log("verify", "verify_poem", { status: verified.status }, {
+      poemId: verifiedPoemId,
+      title: verifiedTitle,
+      sourceUrl: verified.sourceUrl || null,
+    });
+    await this.updateProgress(15, "VERIFYING", "Verification complete");
+
+    // Phase 2: Generate art (15-30%)
+    await this.updateProgress(16, "GENERATING_ART", "Generating artwork");
     let artGenerated = false;
     try {
       await generatePoemArt(db, {
-        poemId: acquired.poemId,
-        title: acquired.title,
-        content: acquired.content,
-        themes: acquired.themes,
+        poemId: verifiedPoemId,
+        title: verifiedTitle,
+        content: verifiedContent,
+        themes: verifiedThemes,
         artStyle: params.artStyle,
       });
       artGenerated = true;
@@ -71,10 +108,10 @@ export class PoetryAnalysisAgent {
     let audioGenerated = false;
     try {
       await generatePoemAudioPhase(db, {
-        poemId: acquired.poemId,
-        title: acquired.title,
-        content: acquired.content,
-        themes: acquired.themes,
+        poemId: verifiedPoemId,
+        title: verifiedTitle,
+        content: verifiedContent,
+        themes: verifiedThemes,
         language: params.language,
       });
       audioGenerated = true;
@@ -92,15 +129,15 @@ export class PoetryAnalysisAgent {
     await this.updateProgress(38, "ANALYZING", "Analyzing poem with three AI models");
 
     // Load the poem to get full details
-    const poem = await db.poem.findUnique({ where: { id: acquired.poemId } });
-    if (!poem) throw new Error("Poem not found after acquisition");
+    const poem = await db.poem.findUnique({ where: { id: verifiedPoemId } });
+    if (!poem) throw new Error("Poem not found after verification");
 
     const analysisContent = poem.language === "HE"
       ? (poem.contentHe || poem.content)
       : poem.content;
 
     const analysisResult = await analyzePoem(db, {
-      poemId: acquired.poemId,
+      poemId: verifiedPoemId,
       title: poem.language === "HE" ? (poem.titleHe || poem.title) : poem.title,
       author: poem.language === "HE" ? (poem.authorHe || poem.author) : poem.author,
       content: analysisContent,
@@ -117,7 +154,7 @@ export class PoetryAnalysisAgent {
     // Phase 3b: Generate vocabulary
     try {
       const vocabResult = await generateVocabulary(db, {
-        poemId: acquired.poemId,
+        poemId: verifiedPoemId,
         content: analysisContent,
         language: poem.language as "EN" | "HE",
       });
@@ -133,7 +170,7 @@ export class PoetryAnalysisAgent {
     // Phase 3c: Generate line-by-line explanations
     try {
       const explanationResult = await generateLineExplanations(db, {
-        poemId: acquired.poemId,
+        poemId: verifiedPoemId,
         content: analysisContent,
         language: poem.language as "EN" | "HE",
       });
@@ -152,7 +189,7 @@ export class PoetryAnalysisAgent {
       await this.updateProgress(75, "COMPARING", "Comparing AI perspectives");
       try {
         const compareResult = await compareAnalyses(db, {
-          poemId: acquired.poemId,
+          poemId: verifiedPoemId,
           title: poem.title,
           language: poem.language as "EN" | "HE",
         });
@@ -182,7 +219,7 @@ export class PoetryAnalysisAgent {
 
     await db.poemFeature.create({
       data: {
-        poemId: acquired.poemId,
+        poemId: verifiedPoemId,
         slug,
         status: "PUBLISHED",
         publishedAt: new Date(),
@@ -192,7 +229,7 @@ export class PoetryAnalysisAgent {
     await this.updateProgress(100, "COMPLETED", "Pipeline complete");
 
     return {
-      poemId: acquired.poemId,
+      poemId: verifiedPoemId,
       analysesCompleted: analysisResult.completed,
       artGenerated,
       audioGenerated,
