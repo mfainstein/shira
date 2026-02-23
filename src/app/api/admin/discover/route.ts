@@ -2,18 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { getLLMAdapter } from "@/lib/llm";
 import { extractJsonObject } from "@/lib/pipeline/utils";
-import { RegistryPoem } from "@/config/poem-registry";
-import fs from "fs";
-import path from "path";
+import { RegistryPoem, POEM_REGISTRY } from "@/config/poem-registry";
+import db from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   const authError = await requireAuth(request);
   if (authError) return authError;
 
-  const { poet, language, action } = await request.json();
+  const body = await request.json();
+  const { poet, language, action } = body;
 
   if (action === "add") {
-    return handleAdd(request);
+    return handleAdd(body.poems);
   }
 
   if (!poet || !language) {
@@ -24,6 +24,27 @@ export async function POST(request: NextRequest) {
   }
 
   const llm = getLLMAdapter("gemini-3-flash");
+
+  // Build exclusion list from static registry + DB registry
+  const staticTitles = POEM_REGISTRY
+    .filter((p) => p.author.toLowerCase().includes(poet.toLowerCase()) ||
+                   (p.authorHe && p.authorHe.includes(poet)))
+    .map((p) => p.title);
+
+  const dbEntries = await db.poemRegistry.findMany({
+    where: {
+      OR: [
+        { author: { contains: poet, mode: "insensitive" } },
+        { authorHe: { contains: poet } },
+      ],
+    },
+    select: { title: true },
+  });
+
+  const allExisting = [...staticTitles, ...dbEntries.map((e) => e.title)];
+  const exclusionNote = allExisting.length > 0
+    ? `\nWe already have these poems in our registry, suggest DIFFERENT ones: ${allExisting.join(", ")}`
+    : "";
 
   const langInstruction =
     language === "HE"
@@ -47,6 +68,7 @@ Choose poems that are:
 - Complete and digestible (not too long — under 60 lines preferred)
 - Widely anthologized and well-known
 - Rich in literary devices and suitable for analysis
+${exclusionNote}
 
 ${langInstruction}
 
@@ -61,9 +83,7 @@ Respond with a JSON object: {"poems": [...]}"`,
   return NextResponse.json({ poems, cost: response.cost });
 }
 
-async function handleAdd(request: NextRequest) {
-  const { poems } = await request.json();
-
+async function handleAdd(poems: RegistryPoem[]) {
   if (!Array.isArray(poems) || poems.length === 0) {
     return NextResponse.json(
       { error: "poems array is required" },
@@ -71,35 +91,24 @@ async function handleAdd(request: NextRequest) {
     );
   }
 
-  const registryPath = path.join(
-    process.cwd(),
-    "src/config/poem-registry.ts"
-  );
+  let added = 0;
+  for (const p of poems) {
+    try {
+      await db.poemRegistry.create({
+        data: {
+          title: p.title,
+          titleHe: p.titleHe || null,
+          author: p.author,
+          authorHe: p.authorHe || null,
+          language: p.language,
+          themes: p.themes || [],
+        },
+      });
+      added++;
+    } catch {
+      // Unique constraint violation — already exists, skip
+    }
+  }
 
-  const content = fs.readFileSync(registryPath, "utf-8");
-
-  // Build new entries
-  const newEntries = poems
-    .map((p: RegistryPoem) => {
-      const fields: string[] = [
-        `title: ${JSON.stringify(p.title)}`,
-      ];
-      if (p.titleHe) fields.push(`titleHe: ${JSON.stringify(p.titleHe)}`);
-      fields.push(`author: ${JSON.stringify(p.author)}`);
-      if (p.authorHe) fields.push(`authorHe: ${JSON.stringify(p.authorHe)}`);
-      fields.push(`language: ${JSON.stringify(p.language)}`);
-      fields.push(`themes: ${JSON.stringify(p.themes)}`);
-      return `  { ${fields.join(", ")} },`;
-    })
-    .join("\n");
-
-  // Insert before the closing ];
-  const updated = content.replace(
-    /\n];\s*$/,
-    `\n\n  // Added via admin discover\n${newEntries}\n];\n`
-  );
-
-  fs.writeFileSync(registryPath, updated, "utf-8");
-
-  return NextResponse.json({ added: poems.length });
+  return NextResponse.json({ added });
 }

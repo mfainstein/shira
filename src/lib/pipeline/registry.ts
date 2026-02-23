@@ -11,17 +11,33 @@ function normalizeForDedup(s: string): string {
 }
 
 /**
- * Pick a random un-acquired poem from the registry.
+ * Pick a random un-acquired poem from the registry (static + DB).
  * Checks existing DB poems (title+author) to avoid duplicates.
  */
 export async function pickRegistryPoem(
   db: PrismaClient,
   language: "EN" | "HE"
 ): Promise<RegistryPoem | null> {
-  const candidates = POEM_REGISTRY.filter((p) => p.language === language);
+  // Combine static registry + DB registry entries
+  const dbEntries = await db.poemRegistry.findMany({
+    where: { language, acquired: false },
+  });
+
+  const candidates: RegistryPoem[] = [
+    ...POEM_REGISTRY.filter((p) => p.language === language),
+    ...dbEntries.map((e) => ({
+      title: e.title,
+      titleHe: e.titleHe || undefined,
+      author: e.author,
+      authorHe: e.authorHe || undefined,
+      language: e.language as "EN" | "HE",
+      themes: (e.themes as string[]) || [],
+    })),
+  ];
+
   if (candidates.length === 0) return null;
 
-  // Get existing poems to check against
+  // Get existing acquired poems to check against
   const existingPoems = await db.poem.findMany({
     select: { title: true, author: true },
     take: 500,
@@ -51,6 +67,18 @@ export async function pickRegistryPoem(
   console.log(
     `[Registry] Picked: "${pick.title}" by ${pick.author} (${available.length} available)`
   );
+
+  // Mark as acquired in DB registry if it came from there
+  const dbMatch = dbEntries.find(
+    (e) => e.title === pick.title && e.author === pick.author
+  );
+  if (dbMatch) {
+    await db.poemRegistry.update({
+      where: { id: dbMatch.id },
+      data: { acquired: true },
+    });
+  }
+
   return pick;
 }
 

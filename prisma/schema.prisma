@@ -182,6 +182,20 @@ model AnalysisJob {
   logs JobLog[]
 }
 
+model PoemRegistry {
+  id        String   @id @default(cuid())
+  title     String
+  titleHe   String?
+  author    String
+  authorHe  String?
+  language  Language @default(EN)
+  themes    Json     @default("[]")
+  acquired  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([title, author])
+}
+
 model JobLog {
   id         String   @id @default(cuid())
   jobId      String
