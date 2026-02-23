@@ -5,8 +5,10 @@ import {
   findPoemForThemes,
   poetryDBToContent,
   guessThemes,
+  searchByTitle,
 } from "../poetrydb";
 import { extractJsonObject } from "../utils";
+import { pickRegistryPoem, buildRegistrySearchQuery } from "../registry";
 
 function normalizeForDedup(s: string): string {
   return s
@@ -86,6 +88,136 @@ async function acquireFoundPoem(
   const existingContent = new Set(
     existingPoems.map((p) => contentFingerprint(p.content))
   );
+
+  // ── Registry-first: try specific poem from curated registry ──
+  const registryPoem = await pickRegistryPoem(db, params.language);
+  if (registryPoem) {
+    console.log(`[Acquire] Registry pick: "${registryPoem.title}" by ${registryPoem.author}`);
+
+    // For EN poems, try PoetryDB by exact title first (free, no LLM cost)
+    if (registryPoem.language === "EN") {
+      const poetryDBResults = await searchByTitle(registryPoem.title);
+      const match = poetryDBResults.find(
+        (p) =>
+          p.title.toLowerCase() === registryPoem.title.toLowerCase() &&
+          p.author.toLowerCase().includes(registryPoem.author.split(" ").pop()!.toLowerCase())
+      );
+      if (match) {
+        const content = poetryDBToContent(match);
+        const contentFp = contentFingerprint(content);
+        if (!existingContent.has(contentFp)) {
+          const poemThemes = registryPoem.themes.length > 0 ? registryPoem.themes : guessThemes(match);
+          const poem = await db.poem.create({
+            data: {
+              title: match.title,
+              author: match.author,
+              content,
+              language: "EN",
+              source: "FOUND",
+              themes: poemThemes,
+              isPublicDomain: true,
+            },
+          });
+          console.log(`[Acquire] Registry+PoetryDB success: "${poem.title}"`);
+          return {
+            poemId: poem.id,
+            title: poem.title,
+            content: poem.content,
+            language: "EN",
+            themes: poemThemes,
+            cost: 0,
+          };
+        }
+      }
+    }
+
+    // Web research with specific query
+    const registryQuery = buildRegistrySearchQuery(registryPoem);
+    const registryResearch = await researchWithFallback({
+      query: registryQuery,
+      context: `Finding the full text of "${registryPoem.title}" by ${registryPoem.author}`,
+      maxResults: 5,
+    });
+
+    const registryLlm = getLLMAdapter("claude-opus-4-5");
+    const registryHebrewExtraction = registryPoem.language === "HE"
+      ? `The poem should be in Hebrew. You MUST provide:
+- "titleHe": the Hebrew title
+- "authorHe": the author name in Hebrew
+- "contentHe": the full poem text in Hebrew
+- "title": English translation of the title
+- "author": author name in English
+- "content": English translation of the poem (translate it yourself if needed)`
+      : `Provide "title", "author", and "content" (the full poem text in English).`;
+
+    const registrySourceUrls = registryResearch.sources
+      .filter((s) => s.url)
+      .map((s) => s.url);
+
+    const registryExtraction = await registryLlm.generate(
+      `Extract the complete text of "${registryPoem.title}" by ${registryPoem.author} from these research results.
+
+CRITICAL: You MUST use the EXACT text found in the research results. Do NOT paraphrase, rewrite, or fabricate any poem text. If the full text is not available, set "content" to "" (empty string).
+
+${registryHebrewExtraction}
+
+Also provide "sourceUrl": the URL where the poem text was found.
+
+Research results: ${registryResearch.answer || "No direct answer"}
+Sources: ${registryResearch.sources.map((s) => `[${s.url || ""}] ${s.snippet}`).join("\n")}
+
+Respond in JSON format:
+{"title": "...", "titleHe": "...", "author": "...", "authorHe": "...", "content": "...", "contentHe": "...", "themes": ["theme1", "theme2"], "sourceUrl": "..."}`,
+      { temperature: 0.3 }
+    );
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const extracted = extractJsonObject<any>(registryExtraction.content);
+      if (extracted) {
+        const extractedContent = extracted.content || "";
+        const extractedContentHe = extracted.contentHe || "";
+        const hasContent = registryPoem.language === "HE"
+          ? extractedContentHe.trim().length > 0
+          : extractedContent.trim().length > 0;
+
+        if (hasContent) {
+          const contentFp = contentFingerprint(extractedContent);
+          if (!existingContent.has(contentFp)) {
+            const resolvedSourceUrl = extracted.sourceUrl || registrySourceUrls[0] || null;
+            const poem = await db.poem.create({
+              data: {
+                title: extracted.title || registryPoem.title,
+                titleHe: extracted.titleHe || registryPoem.titleHe || null,
+                author: extracted.author || registryPoem.author,
+                authorHe: extracted.authorHe || registryPoem.authorHe || null,
+                content: extracted.content,
+                contentHe: extracted.contentHe || null,
+                language: registryPoem.language,
+                source: "FOUND",
+                sourceUrl: resolvedSourceUrl,
+                themes: extracted.themes || registryPoem.themes,
+                isPublicDomain: true,
+              },
+            });
+
+            console.log(`[Acquire] Registry+Research success: "${poem.title}"`);
+            return {
+              poemId: poem.id,
+              title: registryPoem.language === "HE" ? (poem.titleHe || poem.title) : poem.title,
+              content: registryPoem.language === "HE" ? (poem.contentHe || poem.content) : poem.content,
+              language: registryPoem.language,
+              themes: extracted.themes || registryPoem.themes,
+              cost: registryExtraction.cost + (registryResearch.cost || 0),
+            };
+          }
+        }
+      }
+    } catch {
+      console.log(`[Acquire] Registry extraction failed for "${registryPoem.title}", falling through`);
+    }
+  }
+  // ── End registry-first ──
 
   if (params.language === "EN") {
     // Try PoetryDB first

@@ -96,9 +96,9 @@ async function getRandomParams() {
   // Pick fresh theme (avoids recently used ones)
   const topic = await pickFreshTheme(language);
 
-  // Weighted acquisition mode: 60% found, 40% AI-generated
+  // Weighted acquisition mode: 85% found, 15% AI-generated
   const acquisitionMode: AcquisitionMode =
-    Math.random() > 0.4 ? "found" : "ai_generated";
+    Math.random() > 0.15 ? "found" : "ai_generated";
 
   // Art style: 70% minimalist, 30% DALL-E
   const artStyle: ArtStyle = Math.random() > 0.3 ? "MINIMALIST" : "DALLE";

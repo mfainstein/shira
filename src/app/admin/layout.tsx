@@ -7,6 +7,7 @@ const navItems = [
   { href: "/admin/poems", label: "Poems" },
   { href: "/admin/review", label: "Review" },
   { href: "/admin/queue", label: "Queue" },
+  { href: "/admin/discover", label: "Discover" },
 ];
 
 export default function AdminLayout({
